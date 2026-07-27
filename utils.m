@@ -1,10 +1,10 @@
 #import "utils.h"
-#import <rootless.h>
+#import <roothide.h>
 
 NSString *localizedStringForKey(NSString *key) {
     static NSBundle *tweakBundle;
     if (!tweakBundle)
-        tweakBundle = [[NSBundle alloc] initWithPath:ROOT_PATH_NS(@"/Library/Application Support/SettingsWidgets")];
+        tweakBundle = [[NSBundle alloc] initWithPath:jbroot(@"/Library/Application Support/SettingsWidgets")];
 
     return [tweakBundle localizedStringForKey:key value:@"" table:nil];
 }
