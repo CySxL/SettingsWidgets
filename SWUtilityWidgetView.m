@@ -1,115 +1,98 @@
 #import "SWUtilityWidgetView.h"
-#import "SWUtils.h"
-
-
-inline UIColor *colorWithRGB(unsigned char red, unsigned char green, unsigned char blue) {
-    return [UIColor colorWithRed:red/255.f green:green/255.f blue:blue/255.f alpha:1.0];
-}
-
-@interface UIView (lazyBonusRoute)
--(id)_viewControllerForAncestor;
-@end
+#include <spawn.h>
+#import <roothide.h>
 
 @implementation SWUtilityWidgetView
--(NSString *)iconImage {
-	return @"utilityicon";
-}
--(NSString *)widgetHeaderLocalizationString {
-	return @"UTILITY_WIDGET_HEADER";
+-(instancetype)init {
+    if (self = [super init]) {
+        self.iconImage = @"utility";
+        self.widgetHeaderLocalizationString = @"Utility";
+        self.prefsURL = @"";
+        self.hasPrefsURL = NO;
+    }
+    return self;
 }
 -(void)additionalSetup {
-	self.hasPrefsURL = NO;
-	_respringView = [[UIView alloc] init];
+    UIButton *safeModeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    if (@available(iOS 13.0, *)) {
+        UIImage *img = [[UIImage systemImageNamed:@"shield.lefthalf.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        [safeModeBtn setImage:img forState:UIControlStateNormal];
+    } else {
+        [safeModeBtn setTitle:@"Safe" forState:UIControlStateNormal];
+    }
+    safeModeBtn.tintColor = [UIColor systemOrangeColor];
+    [safeModeBtn addTarget:self action:@selector(safeMode) forControlEvents:UIControlEventTouchUpInside];
+    safeModeBtn.translatesAutoresizingMaskIntoConstraints = NO;
+    [self addSubview:safeModeBtn];
 
-	_respringView.layer.cornerRadius = 14;
-	_respringView.translatesAutoresizingMaskIntoConstraints = NO;
+    UIButton *respringBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    if (@available(iOS 13.0, *)) {
+        UIImage *img = [[UIImage systemImageNamed:@"arrow.clockwise.circle.fill"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        [respringBtn setImage:img forState:UIControlStateNormal];
+    } else {
+        [respringBtn setTitle:@"Respring" forState:UIControlStateNormal];
+    }
+    respringBtn.tintColor = [UIColor systemRedColor];
+    [respringBtn addTarget:self action:@selector(respring) forControlEvents:UIControlEventTouchUpInside];
+    respringBtn.translatesAutoresizingMaskIntoConstraints = NO;
+    [self addSubview:respringBtn];
 
-	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(respringButtonTapped:)];
-	[_respringView addGestureRecognizer:tapGestureRecognizer];
-	
+    [respringBtn.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-15].active = YES;
+    [respringBtn.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
+    [respringBtn.widthAnchor constraintEqualToConstant:30].active = YES;
+    [respringBtn.heightAnchor constraintEqualToConstant:30].active = YES;
 
-	UIActivityIndicatorView *respringIcon = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
-	respringIcon.translatesAutoresizingMaskIntoConstraints = NO;
-	respringIcon.hidesWhenStopped = NO;
-
-	[_respringView addSubview:respringIcon];
-
-	[respringIcon.centerXAnchor constraintEqualToAnchor: _respringView.centerXAnchor].active = YES;
-	[respringIcon.centerYAnchor constraintEqualToAnchor: _respringView.centerYAnchor].active = YES;
-
-
-	[self addSubview:_respringView];
-
-	[_respringView.leadingAnchor constraintEqualToAnchor: self.leadingAnchor constant: 10].active = YES;
-	[_respringView.bottomAnchor constraintEqualToAnchor: self.bottomAnchor constant: -10].active = YES;
-	[_respringView.widthAnchor constraintEqualToAnchor:self.widthAnchor multiplier:0.5 constant:-15].active = YES;
-	[_respringView.heightAnchor constraintEqualToConstant:28].active = YES;
-
-
-	_secondView = [[UIView alloc] init];
-	_secondView.layer.cornerRadius = 14;
-	_secondView.translatesAutoresizingMaskIntoConstraints = NO;
-	
-
-	
-	UITapGestureRecognizer *secondViewTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(secondViewTapped:)];
-	[_secondView addGestureRecognizer:secondViewTapGestureRecognizer];
-
-	[self addSubview:_secondView];
-
-	[_secondView.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-10].active = YES;
-	[_secondView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-10].active = YES;
-	[_secondView.widthAnchor constraintEqualToAnchor:self.widthAnchor multiplier:0.5 constant:-15].active = YES;
-	[_secondView.heightAnchor constraintEqualToConstant:28].active = YES;
-
-	[self updateUtilityButtonBackgrounds];
-
+    [safeModeBtn.trailingAnchor constraintEqualToAnchor:respringBtn.leadingAnchor constant:-15].active = YES;
+    [safeModeBtn.centerYAnchor constraintEqualToAnchor:self.centerYAnchor].active = YES;
+    [safeModeBtn.widthAnchor constraintEqualToConstant:30].active = YES;
+    [safeModeBtn.heightAnchor constraintEqualToConstant:30].active = YES;
+    
+    [self bringSubviewToFront:respringBtn];
+    [self bringSubviewToFront:safeModeBtn];
 }
 
--(void)respringButtonTapped:(UIGestureRecognizer *)sender {
-	UIViewController *cont = [self _viewControllerForAncestor];
-	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Respring Device?"
-		message:nil
-		preferredStyle:UIAlertControllerStyleAlert];
-		
-	void (^respringAction)(UIAlertAction *) = ^void(UIAlertAction *action) {
-		[SWUtils respringDevice];
-	};
-
-	UIAlertAction *defaultAction = [UIAlertAction actionWithTitle:@"OK" 
-		style:UIAlertActionStyleDestructive 
-		handler:respringAction];
-	UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" 
-		style:UIAlertActionStyleDefault 
-		handler:nil];
-
-	[alert addAction:defaultAction];
-	[alert addAction:cancelAction];
-	[cont presentViewController:alert animated:YES completion:nil];
+-(UIViewController *)parentViewController {
+    UIResponder *responder = self;
+    while ([responder isKindOfClass:[UIView class]]) {
+        responder = [responder nextResponder];
+    }
+    if ([responder isKindOfClass:[UIViewController class]]) {
+        return (UIViewController *)responder;
+    }
+    return nil;
 }
 
--(void)secondViewTapped:(UIGestureRecognizer *)sender {
-
+-(void)respring {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Respring" message:@"Are you sure you want to Respring?" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        pid_t pid;
+        const char *argv[] = {"killall", "-9", "SpringBoard", NULL};
+        posix_spawn(&pid, jbroot("/usr/bin/killall"), NULL, NULL, (char *const *)argv, NULL);
+    }]];
+    [[self parentViewController] presentViewController:alert animated:YES completion:nil];
 }
 
-
--(void)updateUtilityButtonBackgrounds {
-	if (@available(iOS 13, *)) {
-		if ([UITraitCollection currentTraitCollection].userInterfaceStyle == UIUserInterfaceStyleDark) {
-			_respringView.backgroundColor = colorWithRGB(10, 10, 10);
-			_secondView.backgroundColor = colorWithRGB(10, 10, 10);
-		} else {
-			_respringView.backgroundColor = colorWithRGB(200, 200, 200);
-			_secondView.backgroundColor = colorWithRGB(200, 200, 200);
-		}
-	} else {
-		_respringView.backgroundColor = colorWithRGB(200, 200, 200);
-		_secondView.backgroundColor = colorWithRGB(200, 200, 200);
-	}
+-(void)safeMode {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Safe Mode" message:@"Are you sure you want to enter Safe Mode?" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        pid_t pid;
+        const char *argv[] = {"killall", "-SEGV", "SpringBoard", NULL};
+        posix_spawn(&pid, jbroot("/usr/bin/killall"), NULL, NULL, (char *const *)argv, NULL);
+    }]];
+    [[self parentViewController] presentViewController:alert animated:YES completion:nil];
 }
 
--(void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
-    [super traitCollectionDidChange:previousTraitCollection];
-	[self updateUtilityButtonBackgrounds];
+-(UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    for (UIView *subview in self.subviews) {
+        if ([subview isKindOfClass:[UIButton class]]) {
+            CGPoint buttonPoint = [subview convertPoint:point fromView:self];
+            if ([subview pointInside:buttonPoint withEvent:event]) {
+                return subview;
+            }
+        }
+    }
+    return [super hitTest:point withEvent:event];
 }
 @end
