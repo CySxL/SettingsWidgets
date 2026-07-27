@@ -1,10 +1,7 @@
-#import "SWDiskUsageView.h"
 #import "SWWidgetView.h"
-#import <UIKit/UIKit.h>
-#import <Foundation/Foundation.h>
-
-@interface SWStorageWidgetView : SWWidgetView {
-    SWDiskUsageView *_diskUsageView;
-}
--(SWDiskUsageView *)diskUsageView;
+@interface SWStorageWidgetView : SWWidgetView
+@property (nonatomic, strong) UILabel *usageLabel;
+@property (nonatomic, strong) UIView *bgBar;
+@property (nonatomic, strong) UIView *fillBar;
+@property (nonatomic, strong) NSLayoutConstraint *fillWidthConstraint;
 @end
