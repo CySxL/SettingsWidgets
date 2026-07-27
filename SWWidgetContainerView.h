@@ -1,20 +1,15 @@
-#import "SWWidgetView.h"
-#import "SWBatteryWidgetView.h"
-#import "SWStorageWidgetView.h"
-#import "SWWifiWidgetView.h"
-#import "SWCellularWidgetView.h"
-#import "SWUtilityWidgetView.h"
 #import <UIKit/UIKit.h>
-#import <Foundation/Foundation.h>
+#import "SWWidgetView.h"
 
-@interface SWWidgetContainerView : UIView {
-	SWWidgetView *_widgetView1;
-	SWWidgetView *_widgetView2;
-	SWWidgetType _widgetType1;
-	SWWidgetType _widgetType2;
-	BOOL _transparentWidgetBackgrounds;
-}
+@interface SWWidgetContainerView : UIView
+@property (nonatomic, strong) SWWidgetView *widgetView1;
+@property (nonatomic, strong) SWWidgetView *widgetView2;
+@property (nonatomic, assign) SWWidgetType widgetType1;
+@property (nonatomic, assign) SWWidgetType widgetType2;
+@property (nonatomic, assign) BOOL transparentWidgetBackgrounds;
+
 -(void)setupWidgetsWithType1:(SWWidgetType)widgetType1 type2:(SWWidgetType)widgetType2 transparentBackground:(BOOL)transparent widgetInset:(int)inset cornerRadius:(int)cornerRadius;
+-(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 transparentBackground:(BOOL)trans widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4;
 -(void)setWidgetBackgrounds;
--(void)loadWidgetData;
+-(void)applyCustomBackgrounds;
 @end
