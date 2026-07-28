@@ -5,7 +5,7 @@
 @implementation SWUtilityWidgetView
 -(instancetype)init {
     if (self = [super init]) {
-        self.iconImage = @"utility";
+        self.iconImage = @"utilityicon";
         self.widgetHeaderLocalizationString = @"Utility";
         self.prefsURL = @"";
         self.hasPrefsURL = NO;
