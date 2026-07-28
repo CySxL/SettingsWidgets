@@ -60,6 +60,8 @@
     UIView *_widgetView4;
     int _widgetType3;
     int _widgetType4;
+    id _btManager;
+    BOOL _btObserving;
 }
 @end
 
@@ -449,17 +451,28 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             if (!NSClassFromString(@"BluetoothManager")) {
                 [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/BluetoothManager.framework"] load];
             }
-            // BluetoothManager asserts unless it is created and used on the main thread,
-            // and populates its device list asynchronously after attaching to bluetoothd.
+            // BluetoothManager asserts unless it is created and used on the main thread.
             dispatch_async(dispatch_get_main_queue(), ^{
                 Class btClass = NSClassFromString(@"BluetoothManager");
-                id manager = btClass ? [btClass performSelector:@selector(sharedInstance)] : nil;
-                [self updateBluetoothWithManager:manager attempt:0];
+                _btManager = btClass ? [btClass performSelector:@selector(sharedInstance)] : nil;
+                if (_btManager && !_btObserving) {
+                    _btObserving = YES;
+                    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+                    for (NSString *name in @[@"BluetoothAvailabilityChangedNotification",
+                                             @"BluetoothConnectabilityChangedNotification",
+                                             @"BluetoothDeviceConnectSuccessNotification",
+                                             @"BluetoothDeviceDisconnectSuccessNotification",
+                                             @"BluetoothPowerChangedNotification"]) {
+                        [nc addObserver:self selector:@selector(refreshBluetooth) name:name object:nil];
+                    }
+                }
+                [self refreshBluetooth];
             });
         });
     }
 }
--(void)updateBluetoothWithManager:(id)manager attempt:(int)attempt {
+-(void)refreshBluetooth {
+    id manager = _btManager;
     NSString *devName = nil;
     if (manager) {
         NSArray *devices = [manager performSelector:@selector(connectedDevices)];
@@ -485,18 +498,22 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             }
         }
     }
-    // The device list can take a moment to populate after attach; retry briefly.
-    if (!devName && attempt < 6) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self updateBluetoothWithManager:manager attempt:attempt + 1];
-        });
-        return;
+    if (!devName) {
+        // Nothing connected. If the manager is still attaching, wait for a
+        // notification rather than guessing; otherwise this is a real "not connected".
+        BOOL available = YES;
+        if ([manager respondsToSelector:@selector(available)]) available = [[manager valueForKey:@"available"] boolValue];
+        if (!available) return;
+        devName = @"Not Connected";
     }
-    NSDictionary *data = @{@"btDevice": devName ?: @"Not Connected"};
+    NSDictionary *data = @{@"btDevice": devName};
     if (_widgetType1 == 6) [(id)_widgetView1 updateForData:data];
     if (_widgetType2 == 6) [(id)_widgetView2 updateForData:data];
     if (_widgetType3 == 6) [(id)_widgetView3 updateForData:data];
     if (_widgetType4 == 6) [(id)_widgetView4 updateForData:data];
+}
+-(void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 -(void)setWidgetBackgrounds {
     CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
