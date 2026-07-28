@@ -20,9 +20,9 @@
 
     self.bgBar = [[UIView alloc] init];
     if (@available(iOS 13.0, *)) {
-        self.bgBar.backgroundColor = [UIColor tertiarySystemFillColor];
+        self.bgBar.backgroundColor = [UIColor systemGray5Color];
     } else {
-        self.bgBar.backgroundColor = [UIColor colorWithWhite:0.5 alpha:0.3];
+        self.bgBar.backgroundColor = [UIColor colorWithWhite:0.85 alpha:1.0];
     }
     self.bgBar.layer.cornerRadius = 4;
     self.bgBar.translatesAutoresizingMaskIntoConstraints = NO;
