@@ -446,33 +446,57 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
     }
     if ([self shouldLoadBluetoothData]) {
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            NSString *devName = @"Not Connected";
-            Class btClass = NSClassFromString(@"BluetoothManager");
-            if (!btClass) {
+            if (!NSClassFromString(@"BluetoothManager")) {
                 [[NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/BluetoothManager.framework"] load];
-                btClass = NSClassFromString(@"BluetoothManager");
             }
-            if (btClass) {
-                id manager = [btClass performSelector:@selector(sharedInstance)];
-                if (manager) {
-                    NSArray *devices = [manager performSelector:@selector(connectedDevices)];
-                    if (devices && devices.count > 0) {
-                        id dev = devices.firstObject;
-                        if ([dev respondsToSelector:@selector(name)]) {
-                            devName = [dev performSelector:@selector(name)];
-                        }
-                    }
-                }
-            }
+            // BluetoothManager asserts unless it is created and used on the main thread,
+            // and populates its device list asynchronously after attaching to bluetoothd.
             dispatch_async(dispatch_get_main_queue(), ^{
-                NSDictionary *data = @{@"btDevice": devName};
-                if (_widgetType1 == 6) [(id)_widgetView1 updateForData:data];
-                if (_widgetType2 == 6) [(id)_widgetView2 updateForData:data];
-                if (_widgetType3 == 6) [(id)_widgetView3 updateForData:data];
-                if (_widgetType4 == 6) [(id)_widgetView4 updateForData:data];
+                Class btClass = NSClassFromString(@"BluetoothManager");
+                id manager = btClass ? [btClass performSelector:@selector(sharedInstance)] : nil;
+                [self updateBluetoothWithManager:manager attempt:0];
             });
         });
     }
+}
+-(void)updateBluetoothWithManager:(id)manager attempt:(int)attempt {
+    NSString *devName = nil;
+    if (manager) {
+        NSArray *devices = [manager performSelector:@selector(connectedDevices)];
+        if (![devices isKindOfClass:[NSArray class]] || devices.count == 0) {
+            if ([manager respondsToSelector:@selector(pairedDevices)]) {
+                NSArray *paired = [manager performSelector:@selector(pairedDevices)];
+                if ([paired isKindOfClass:[NSArray class]]) {
+                    NSMutableArray *connected = [NSMutableArray array];
+                    for (id d in paired) {
+                        @try {
+                            if ([[d valueForKey:@"connected"] boolValue]) [connected addObject:d];
+                        } @catch (__unused NSException *e) {}
+                    }
+                    devices = connected;
+                }
+            }
+        }
+        if ([devices isKindOfClass:[NSArray class]] && devices.count > 0) {
+            id dev = devices.firstObject;
+            if ([dev respondsToSelector:@selector(name)]) {
+                NSString *n = [dev performSelector:@selector(name)];
+                if ([n isKindOfClass:[NSString class]] && n.length > 0) devName = n;
+            }
+        }
+    }
+    // The device list can take a moment to populate after attach; retry briefly.
+    if (!devName && attempt < 6) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self updateBluetoothWithManager:manager attempt:attempt + 1];
+        });
+        return;
+    }
+    NSDictionary *data = @{@"btDevice": devName ?: @"Not Connected"};
+    if (_widgetType1 == 6) [(id)_widgetView1 updateForData:data];
+    if (_widgetType2 == 6) [(id)_widgetView2 updateForData:data];
+    if (_widgetType3 == 6) [(id)_widgetView3 updateForData:data];
+    if (_widgetType4 == 6) [(id)_widgetView4 updateForData:data];
 }
 -(void)setWidgetBackgrounds {
     CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
