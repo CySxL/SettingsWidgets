@@ -103,55 +103,63 @@
         [self.customBackgroundImageView.topAnchor constraintEqualToAnchor:self.topAnchor].active = YES;
         [self.customBackgroundImageView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
     }
-    if ([fullPath.lowercaseString hasSuffix:@".gif"]) {
-        NSURL *url = [NSURL fileURLWithPath:fullPath];
-        CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
-        if (source) {
+    BOOL isGif = [fullPath.lowercaseString hasSuffix:@".gif"];
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        if (isGif) {
+            NSURL *url = [NSURL fileURLWithPath:fullPath];
+            CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+            if (!source) return;
             size_t count = CGImageSourceGetCount(source);
-            if (count > 0) {
-                const void **imagesBuffer = (const void **)malloc(sizeof(void *) * count);
-                if (!imagesBuffer) {
-                    CFRelease(source);
-                    return;
-                }
-                NSTimeInterval totalDuration = 0;
-                for (size_t i = 0; i < count; i++) {
-                    @autoreleasepool {
-                        CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, i, NULL);
-                        if (imageRef) {
-                            UIImage *frameImage = [UIImage imageWithCGImage:imageRef];
-                            imagesBuffer[i] = (void *)CFBridgingRetain(frameImage);
-                            CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
-                            if (properties) {
-                                CFDictionaryRef gifProperties = CFDictionaryGetValue(properties, kCGImagePropertyGIFDictionary);
-                                if (gifProperties) {
-                                    NSNumber *delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFUnclampedDelayTime);
-                                    if (!delay || [delay floatValue] == 0) {
-                                        delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFDelayTime);
-                                    }
-                                    totalDuration += ([delay floatValue] > 0) ? [delay floatValue] : 0.1;
+            if (count == 0) { CFRelease(source); return; }
+            const void **imagesBuffer = (const void **)malloc(sizeof(void *) * count);
+            if (!imagesBuffer) { CFRelease(source); return; }
+            NSTimeInterval totalDuration = 0;
+            for (size_t i = 0; i < count; i++) {
+                @autoreleasepool {
+                    CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, i, NULL);
+                    if (imageRef) {
+                        UIImage *frameImage = [UIImage imageWithCGImage:imageRef];
+                        imagesBuffer[i] = (void *)CFBridgingRetain(frameImage);
+                        CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
+                        if (properties) {
+                            CFDictionaryRef gifProperties = CFDictionaryGetValue(properties, kCGImagePropertyGIFDictionary);
+                            if (gifProperties) {
+                                NSNumber *delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFUnclampedDelayTime);
+                                if (!delay || [delay floatValue] == 0) {
+                                    delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFDelayTime);
                                 }
-                                CFRelease(properties);
+                                totalDuration += ([delay floatValue] > 0) ? [delay floatValue] : 0.1;
                             }
-                            CGImageRelease(imageRef);
-                        } else {
-                            imagesBuffer[i] = (void *)CFBridgingRetain([[UIImage alloc] init]);
+                            CFRelease(properties);
                         }
+                        CGImageRelease(imageRef);
+                    } else {
+                        imagesBuffer[i] = (void *)CFBridgingRetain([[UIImage alloc] init]);
                     }
                 }
-                if (totalDuration == 0) totalDuration = count * 0.1;
-                NSArray *frames = CFBridgingRelease(CFArrayCreate(kCFAllocatorDefault, imagesBuffer, count, &kCFTypeArrayCallBacks));
-                for (size_t i = 0; i < count; i++) CFRelease(imagesBuffer[i]);
-                free(imagesBuffer);
-                self.customBackgroundImageView.animationImages = frames;
-                self.customBackgroundImageView.animationDuration = totalDuration;
-                [self.customBackgroundImageView startAnimating];
             }
+            if (totalDuration == 0) totalDuration = count * 0.1;
+            NSArray *frames = CFBridgingRelease(CFArrayCreate(kCFAllocatorDefault, imagesBuffer, count, &kCFTypeArrayCallBacks));
+            for (size_t i = 0; i < count; i++) CFRelease(imagesBuffer[i]);
+            free(imagesBuffer);
             CFRelease(source);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (!strongSelf) return;
+                strongSelf.customBackgroundImageView.animationImages = frames;
+                strongSelf.customBackgroundImageView.animationDuration = totalDuration;
+                [strongSelf.customBackgroundImageView startAnimating];
+            });
+        } else {
+            UIImage *image = [UIImage imageWithContentsOfFile:fullPath];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (!strongSelf) return;
+                strongSelf.customBackgroundImageView.image = image;
+            });
         }
-    } else {
-        self.customBackgroundImageView.image = [UIImage imageWithContentsOfFile:fullPath];
-    }
+    });
 }
 
 static void applyColorToSubviews(UIView *view, UIColor *color, UILabel *excludeLabel) {
