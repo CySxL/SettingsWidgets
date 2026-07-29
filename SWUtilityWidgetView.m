@@ -7,7 +7,7 @@
     if (self = [super init]) {
         self.iconImage = @"utilityicon";
         self.widgetHeaderLocalizationString = @"Utility";
-        self.prefsURL = @"prefs:root=SettingsWidgets";
+        self.prefsURL = @"";
         self.hasPrefsURL = YES;
     }
     return self;
@@ -49,6 +49,16 @@
     
     [self bringSubviewToFront:respringBtn];
     [self bringSubviewToFront:safeModeBtn];
+}
+
+-(void)openPrefsURL {
+    NSBundle *bundle = [NSBundle bundleWithPath:jbroot(@"/Library/PreferenceBundles/swprefs.bundle")];
+    if (![bundle isLoaded]) [bundle load];
+    Class cls = [bundle principalClass] ?: NSClassFromString(@"SWPRootListController");
+    if (!cls) return;
+    UIViewController *pane = [[cls alloc] init];
+    pane.title = @"SettingsWidgets";
+    [[self parentViewController].navigationController pushViewController:pane animated:YES];
 }
 
 -(UIViewController *)parentViewController {
