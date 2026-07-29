@@ -5,7 +5,7 @@
 #import <roothide.h>
 
 #define SW_MAX_PIXEL 480
-#define SW_MAX_FRAMES 100
+#define SW_MAX_FRAMES 60
 
 __attribute__((visibility("hidden")))
 static NSString *SWBaseDir(void) {
