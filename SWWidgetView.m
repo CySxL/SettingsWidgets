@@ -107,25 +107,30 @@
     NSString *sourceName = safePath;
     __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        // Prefer the pre-decoded cache; build it once if missing or stale.
-        NSDictionary *cache = SWLoadBackgroundCache(sourceName);
-        if (!cache) {
+        // Show the first frame near-instantly; build the cache once if missing or stale.
+        UIImage *firstFrame = SWLoadBackgroundFirstFrame(sourceName);
+        if (!firstFrame) {
             SWRebuildBackgroundCache(sourceName);
-            cache = SWLoadBackgroundCache(sourceName);
+            firstFrame = SWLoadBackgroundFirstFrame(sourceName);
         }
+        if (!firstFrame) return;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            strongSelf.customBackgroundImageView.image = firstFrame;
+        });
+
+        // Load the full animation and switch to it once ready.
+        NSDictionary *cache = SWLoadBackgroundCache(sourceName);
         NSArray *frames = cache[@"frames"];
-        if (frames.count == 0) return;
+        if (frames.count <= 1) return;
         NSTimeInterval duration = [cache[@"duration"] doubleValue];
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
-            if (frames.count > 1) {
-                strongSelf.customBackgroundImageView.animationImages = frames;
-                strongSelf.customBackgroundImageView.animationDuration = duration > 0 ? duration : frames.count * 0.1;
-                [strongSelf.customBackgroundImageView startAnimating];
-            } else {
-                strongSelf.customBackgroundImageView.image = frames.firstObject;
-            }
+            strongSelf.customBackgroundImageView.animationImages = frames;
+            strongSelf.customBackgroundImageView.animationDuration = duration > 0 ? duration : frames.count * 0.1;
+            [strongSelf.customBackgroundImageView startAnimating];
         });
     });
 }

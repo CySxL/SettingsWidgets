@@ -162,3 +162,20 @@ NSDictionary *SWLoadBackgroundCache(NSString *sourceFilename) {
 
     return @{ @"frames": frames, @"duration": meta[@"duration"] ?: @0 };
 }
+
+__attribute__((visibility("hidden")))
+UIImage *SWLoadBackgroundFirstFrame(NSString *sourceFilename) {
+    if (sourceFilename.length == 0) return nil;
+    NSString *name = [sourceFilename lastPathComponent];
+    NSString *fullPath = [SWBaseDir() stringByAppendingPathComponent:name];
+    NSString *cacheDir = SWCacheDir(name);
+
+    NSDictionary *meta = [NSDictionary dictionaryWithContentsOfFile:[cacheDir stringByAppendingPathComponent:@"meta.plist"]];
+    if (![meta isKindOfClass:[NSDictionary class]]) return nil;
+
+    NSString *signature = SWSourceSignature(fullPath);
+    if (signature && ![meta[@"signature"] isEqualToString:signature]) return nil;
+    if ([meta[@"frames"] integerValue] <= 0) return nil;
+
+    return SWDecodeImageFile([cacheDir stringByAppendingPathComponent:@"frame_000.png"]);
+}
