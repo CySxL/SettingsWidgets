@@ -1,7 +1,7 @@
 Package: com.shepgoba.settingswidgets
 Name: SettingsWidgets
 Depends: mobilesubstrate, preferenceloader
-Version: 1.9.23
+Version: 1.9.24
 Architecture: iphoneos-arm64e
 Description: Bring good looking widgets to the front page of settings!
 Maintainer: shepgoba
