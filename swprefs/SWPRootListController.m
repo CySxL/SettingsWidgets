@@ -1,4 +1,5 @@
 #import "SWPRootListController.h"
+#import "SWBackgroundCache.h"
 #import <Preferences/PSSpecifier.h>
 #import <PhotosUI/PhotosUI.h>
 #import <roothide.h>
@@ -98,7 +99,10 @@
                 NSString *key = [NSString stringWithFormat:@"customBgPath%ld", (long)index];
                 CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)fileName, CFSTR("com.shepgoba.swprefs"));
                 CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
-                
+
+                // Pre-decode the picked image now so opening Settings later is fast.
+                SWRebuildBackgroundCache(fileName);
+
                 dispatch_async(dispatch_get_main_queue(), ^{
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Success" message:@"Background image saved successfully!" preferredStyle:UIAlertControllerStyleAlert];
                     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];

@@ -4,8 +4,8 @@ include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = swprefs
 
-swprefs_FILES = SWPRootListController.m
-swprefs_FRAMEWORKS = UIKit
+swprefs_FILES = SWPRootListController.m ../SWBackgroundCache.m
+swprefs_FRAMEWORKS = UIKit ImageIO CoreGraphics
 swprefs_PRIVATE_FRAMEWORKS = Preferences
 swprefs_INSTALL_PATH = /Library/PreferenceBundles
 swprefs_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
