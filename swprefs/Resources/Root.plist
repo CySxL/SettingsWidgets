@@ -13,7 +13,7 @@
 		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Corner Radius</string></dict>
 		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>16</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetCornerRadius</string><key>min</key><integer>0</integer><key>max</key><integer>30</integer><key>isSegmented</key><true/><key>showValue</key><true/><key>segmentCount</key><integer>15</integer></dict>
 		
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 1</string></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 1</string><key>footerText</key><string>Font Color sets the text color shown on this widget.</string></dict>
 		<dict>
 			<key>key</key><string>widgetType1</string><key>label</key><string>Widget 1 Type</string><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>defaults</key><string>com.shepgoba.swprefs</string>
 			<key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer><integer>3</integer><integer>4</integer><integer>5</integer><integer>6</integer></array>
@@ -22,14 +22,13 @@
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>transparentMode1</string><key>label</key><string>Transparent Background</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>customBgEnabled1</string><key>label</key><string>Custom Background 1</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Choose Background for Widget 1</string><key>action</key><string>chooseImage1</string></dict>
-        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Font Color</string></dict>
         <dict>
             <key>cell</key><string>PSSegmentCell</string><key>default</key><integer>2</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>fontColor1</string>
             <key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array>
             <key>validTitles</key><array><string>White</string><string>Black</string><string>Adaptive</string></array>
         </dict>
 
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 2</string></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 2</string><key>footerText</key><string>Font Color sets the text color shown on this widget.</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><true/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widget2Enabled</string><key>id</key><string>widget2EnabledSwitch</string><key>label</key><string>Widget 2 Enabled</string></dict>
 		<dict>
 			<key>id</key><string>widgetOption2</string><key>key</key><string>widgetType2</string><key>label</key><string>Widget 2 Type</string><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>defaults</key><string>com.shepgoba.swprefs</string>
@@ -39,14 +38,13 @@
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>transparentMode2</string><key>label</key><string>Transparent Background</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>id</key><string>customBgEnabled2</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>customBgEnabled2</string><key>label</key><string>Custom Background 2</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>id</key><string>chooseBgBtn2</string><key>label</key><string>Choose Background for Widget 2</string><key>action</key><string>chooseImage2</string></dict>
-        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Font Color</string></dict>
         <dict>
             <key>cell</key><string>PSSegmentCell</string><key>default</key><integer>2</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>fontColor2</string>
             <key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array>
             <key>validTitles</key><array><string>White</string><string>Black</string><string>Adaptive</string></array>
         </dict>
 
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 3</string></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 3</string><key>footerText</key><string>Font Color sets the text color shown on this widget.</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widget3Enabled</string><key>id</key><string>widget3EnabledSwitch</string><key>label</key><string>Widget 3 Enabled</string></dict>
 		<dict>
 			<key>id</key><string>widgetOption3</string><key>key</key><string>widgetType3</string><key>label</key><string>Widget 3 Type</string><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>defaults</key><string>com.shepgoba.swprefs</string>
@@ -56,14 +54,13 @@
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>transparentMode3</string><key>label</key><string>Transparent Background</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>id</key><string>customBgEnabled3</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>customBgEnabled3</string><key>label</key><string>Custom Background 3</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>id</key><string>chooseBgBtn3</string><key>label</key><string>Choose Background for Widget 3</string><key>action</key><string>chooseImage3</string></dict>
-        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Font Color</string></dict>
         <dict>
             <key>cell</key><string>PSSegmentCell</string><key>default</key><integer>2</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>fontColor3</string>
             <key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array>
             <key>validTitles</key><array><string>White</string><string>Black</string><string>Adaptive</string></array>
         </dict>
 
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 4</string></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 4</string><key>footerText</key><string>Font Color sets the text color shown on this widget.</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widget4Enabled</string><key>id</key><string>widget4EnabledSwitch</string><key>label</key><string>Widget 4 Enabled</string></dict>
 		<dict>
 			<key>id</key><string>widgetOption4</string><key>key</key><string>widgetType4</string><key>label</key><string>Widget 4 Type</string><key>cell</key><string>PSLinkListCell</string><key>detail</key><string>PSListItemsController</string><key>defaults</key><string>com.shepgoba.swprefs</string>
@@ -73,7 +70,6 @@
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>transparentMode4</string><key>label</key><string>Transparent Background</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>id</key><string>customBgEnabled4</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>customBgEnabled4</string><key>label</key><string>Custom Background 4</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>id</key><string>chooseBgBtn4</string><key>label</key><string>Choose Background for Widget 4</string><key>action</key><string>chooseImage4</string></dict>
-        <dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Font Color</string></dict>
         <dict>
             <key>cell</key><string>PSSegmentCell</string><key>default</key><integer>2</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>fontColor4</string>
             <key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array>
