@@ -112,38 +112,48 @@
             if (!source) return;
             size_t count = CGImageSourceGetCount(source);
             if (count == 0) { CFRelease(source); return; }
-            const void **imagesBuffer = (const void **)malloc(sizeof(void *) * count);
-            if (!imagesBuffer) { CFRelease(source); return; }
+
+            // Decode downscaled thumbnails instead of full-resolution frames, and cap
+            // the frame count, so large GIFs load fast and use far less memory.
+            NSDictionary *thumbOpts = @{
+                (id)kCGImageSourceCreateThumbnailFromImageAlways: @YES,
+                (id)kCGImageSourceCreateThumbnailWithTransform: @YES,
+                (id)kCGImageSourceShouldCacheImmediately: @YES,
+                (id)kCGImageSourceThumbnailMaxPixelSize: @480
+            };
+            const NSUInteger maxFrames = 100;
+            NSUInteger stride = (count + maxFrames - 1) / maxFrames;
+            if (stride < 1) stride = 1;
+
+            NSMutableArray *frames = [NSMutableArray arrayWithCapacity:MIN(count, maxFrames)];
             NSTimeInterval totalDuration = 0;
             for (size_t i = 0; i < count; i++) {
                 @autoreleasepool {
-                    CGImageRef imageRef = CGImageSourceCreateImageAtIndex(source, i, NULL);
-                    if (imageRef) {
-                        UIImage *frameImage = [UIImage imageWithCGImage:imageRef];
-                        imagesBuffer[i] = (void *)CFBridgingRetain(frameImage);
-                        CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
-                        if (properties) {
-                            CFDictionaryRef gifProperties = CFDictionaryGetValue(properties, kCGImagePropertyGIFDictionary);
-                            if (gifProperties) {
-                                NSNumber *delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFUnclampedDelayTime);
-                                if (!delay || [delay floatValue] == 0) {
-                                    delay = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFDelayTime);
-                                }
-                                totalDuration += ([delay floatValue] > 0) ? [delay floatValue] : 0.1;
+                    NSTimeInterval delay = 0.1;
+                    CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(source, i, NULL);
+                    if (properties) {
+                        CFDictionaryRef gifProperties = CFDictionaryGetValue(properties, kCGImagePropertyGIFDictionary);
+                        if (gifProperties) {
+                            NSNumber *d = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFUnclampedDelayTime);
+                            if (!d || [d floatValue] == 0) {
+                                d = (__bridge NSNumber *)CFDictionaryGetValue(gifProperties, kCGImagePropertyGIFDelayTime);
                             }
-                            CFRelease(properties);
+                            if ([d floatValue] > 0) delay = [d floatValue];
                         }
-                        CGImageRelease(imageRef);
-                    } else {
-                        imagesBuffer[i] = (void *)CFBridgingRetain([[UIImage alloc] init]);
+                        CFRelease(properties);
+                    }
+                    totalDuration += delay;
+                    if (i % stride != 0) continue;
+                    CGImageRef thumb = CGImageSourceCreateThumbnailAtIndex(source, i, (__bridge CFDictionaryRef)thumbOpts);
+                    if (thumb) {
+                        [frames addObject:[UIImage imageWithCGImage:thumb]];
+                        CGImageRelease(thumb);
                     }
                 }
             }
-            if (totalDuration == 0) totalDuration = count * 0.1;
-            NSArray *frames = CFBridgingRelease(CFArrayCreate(kCFAllocatorDefault, imagesBuffer, count, &kCFTypeArrayCallBacks));
-            for (size_t i = 0; i < count; i++) CFRelease(imagesBuffer[i]);
-            free(imagesBuffer);
             CFRelease(source);
+            if (frames.count == 0) return;
+            if (totalDuration <= 0) totalDuration = frames.count * 0.1;
             dispatch_async(dispatch_get_main_queue(), ^{
                 __strong typeof(weakSelf) strongSelf = weakSelf;
                 if (!strongSelf) return;
