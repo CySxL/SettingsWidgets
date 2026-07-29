@@ -135,13 +135,13 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             }
         }
     }
+    NSArray *systemServices = nil;
     if ([ddu respondsToSelector:@selector(systemServiceDataUsageForPeriod:)]) {
-        NSArray *svcs = [(CTDeviceDataUsage_Decl *)ddu systemServiceDataUsageForPeriod:0];
-        if ([svcs isKindOfClass:[NSArray class]]) {
-            for (id svc in svcs) {
-                if ([svc respondsToSelector:@selector(usage)]) calcTotal += extractBytes([svc valueForKey:@"usage"]);
-            }
-        }
+        id svcs = [(CTDeviceDataUsage_Decl *)ddu systemServiceDataUsageForPeriod:0];
+        if ([svcs isKindOfClass:[NSArray class]]) systemServices = (NSArray *)svcs;
+    }
+    for (id svc in systemServices) {
+        if ([svc respondsToSelector:@selector(usage)]) calcTotal += extractBytes([svc valueForKey:@"usage"]);
     }
     if ([ddu respondsToSelector:@selector(uninstalledAppDataUsageForPeriod:)]) {
         NSArray *uapps = [(CTDeviceDataUsage_Decl *)ddu uninstalledAppDataUsageForPeriod:0];
@@ -163,18 +163,13 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
         *cellularOut += extractBytes(usage);
     }
 
-    // Hotspot: tethering/hotspot system services only, from the same node.
-    if ([ddu respondsToSelector:@selector(systemServiceDataUsageForPeriod:)]) {
-        NSArray *services = [(CTDeviceDataUsage_Decl *)ddu systemServiceDataUsageForPeriod:0];
-        if ([services isKindOfClass:[NSArray class]]) {
-            for (id service in services) {
-                NSString *bundleId = [service respondsToSelector:@selector(bundleId)] ? [service valueForKey:@"bundleId"] : nil;
-                if ([bundleId isKindOfClass:[NSString class]]) {
-                    if ([bundleId rangeOfString:@"tethering" options:NSCaseInsensitiveSearch].location != NSNotFound ||
-                        [bundleId rangeOfString:@"hotspot" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-                        if ([service respondsToSelector:@selector(usage)]) *hotspotOut += extractBytes([service valueForKey:@"usage"]);
-                    }
-                }
+    // Hotspot: tethering/hotspot system services only, reusing the fetched list.
+    for (id service in systemServices) {
+        NSString *bundleId = [service respondsToSelector:@selector(bundleId)] ? [service valueForKey:@"bundleId"] : nil;
+        if ([bundleId isKindOfClass:[NSString class]]) {
+            if ([bundleId rangeOfString:@"tethering" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                [bundleId rangeOfString:@"hotspot" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                if ([service respondsToSelector:@selector(usage)]) *hotspotOut += extractBytes([service valueForKey:@"usage"]);
             }
         }
     }
