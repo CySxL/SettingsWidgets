@@ -101,7 +101,13 @@
                 CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
 
                 // Pre-decode the picked image now so opening Settings later is fast.
+                // Request background time so this finishes even if Settings is closed.
+                UIApplication *app = [UIApplication sharedApplication];
+                __block UIBackgroundTaskIdentifier bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+                    if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
+                }];
                 SWRebuildBackgroundCache(fileName);
+                if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
 
                 dispatch_async(dispatch_get_main_queue(), ^{
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Success" message:@"Background image saved successfully!" preferredStyle:UIAlertControllerStyleAlert];
