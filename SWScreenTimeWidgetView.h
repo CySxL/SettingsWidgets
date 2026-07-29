@@ -1,3 +1,0 @@
-@interface SWScreenTimeWidgetView : UIView
-
-@end
