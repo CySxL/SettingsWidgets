@@ -7,8 +7,8 @@
     if (self = [super init]) {
         self.iconImage = @"utilityicon";
         self.widgetHeaderLocalizationString = @"Utility";
-        self.prefsURL = @"";
-        self.hasPrefsURL = NO;
+        self.prefsURL = @"prefs:root=SettingsWidgets";
+        self.hasPrefsURL = YES;
     }
     return self;
 }
