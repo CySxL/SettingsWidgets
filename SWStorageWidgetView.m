@@ -34,19 +34,14 @@
     self.fillBar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.bgBar addSubview:self.fillBar];
 
-    UILayoutGuide *guide = [[UILayoutGuide alloc] init];
-    [self addLayoutGuide:guide];
-    [guide.topAnchor constraintEqualToAnchor:self.widgetHeaderLabel.bottomAnchor].active = YES;
-    [guide.bottomAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
-
     [self.usageLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:5].active = YES;
     [self.usageLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-5].active = YES;
-    [self.usageLabel.bottomAnchor constraintEqualToAnchor:guide.centerYAnchor constant:-2].active = YES;
 
     [self.bgBar.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:15].active = YES;
     [self.bgBar.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-15].active = YES;
-    [self.bgBar.topAnchor constraintEqualToAnchor:guide.centerYAnchor constant:4].active = YES;
+    [self.bgBar.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
     [self.bgBar.heightAnchor constraintEqualToConstant:8].active = YES;
+    [self.usageLabel.bottomAnchor constraintEqualToAnchor:self.bgBar.topAnchor constant:-6].active = YES;
 
     [self.fillBar.leadingAnchor constraintEqualToAnchor:self.bgBar.leadingAnchor].active = YES;
     [self.fillBar.topAnchor constraintEqualToAnchor:self.bgBar.topAnchor].active = YES;

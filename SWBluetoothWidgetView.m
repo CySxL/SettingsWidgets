@@ -25,18 +25,13 @@
     self.deviceLabel.numberOfLines = 2;
     [self addSubview:self.deviceLabel];
 
-    UILayoutGuide *guide = [[UILayoutGuide alloc] init];
-    [self addLayoutGuide:guide];
-    [guide.topAnchor constraintEqualToAnchor:self.widgetHeaderLabel.bottomAnchor].active = YES;
-    [guide.bottomAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
-
     [self.statusLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:5].active = YES;
     [self.statusLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-5].active = YES;
-    [self.statusLabel.bottomAnchor constraintEqualToAnchor:guide.centerYAnchor].active = YES;
 
     [self.deviceLabel.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:5].active = YES;
     [self.deviceLabel.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-5].active = YES;
-    [self.deviceLabel.topAnchor constraintEqualToAnchor:guide.centerYAnchor].active = YES;
+    [self.deviceLabel.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
+    [self.statusLabel.bottomAnchor constraintEqualToAnchor:self.deviceLabel.topAnchor].active = YES;
 }
 -(void)updateForData:(NSDictionary *)data {
     NSString *device = data[@"btDevice"];
