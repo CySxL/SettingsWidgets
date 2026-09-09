@@ -112,6 +112,26 @@ static unsigned long long extractBytes(id obj) {
     return bytes;
 }
 
+// HotspotPro publishes the list its own Settings pane shows: nickname resolved
+// and already filtered to devices it considers present. Reading it rather than
+// counting ARP entries here is what stops the two disagreeing. Absent file means
+// HotspotPro is not installed, and its switch in the off position writes nothing,
+// so both cases have to leave the widget exactly as it was.
+static NSArray *hotspotProClients(void) {
+    NSDictionary *cfg = [NSDictionary dictionaryWithContentsOfFile:
+        jbroot(@"/var/mobile/Library/Preferences/com.dangkhoa.hotspotpro.plist")];
+    if (![cfg isKindOfClass:[NSDictionary class]]) return nil;
+    id enabled = cfg[@"enabled"];
+    if ([enabled respondsToSelector:@selector(boolValue)] && ![enabled boolValue]) return nil;
+
+    NSDictionary *state = [NSDictionary dictionaryWithContentsOfFile:
+        jbroot(@"/var/mobile/Library/Caches/hotspotpro-state.plist")];
+    if (![state isKindOfClass:[NSDictionary class]]) return nil;
+    id devices = state[@"devicesNow"];
+    if (![devices isKindOfClass:[NSArray class]]) return nil;
+    return devices;
+}
+
 static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned long long *hotspotOut) {
     if (!ddu) return;
     if ([ddu isKindOfClass:[NSDictionary class]]) {
@@ -432,8 +452,25 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
                     isHotspotActive = YES;
                 }
             }
+            // Only while the bridge is up: with the hotspot off there are no
+            // clients to report, which is also why no staleness window is
+            // needed on a file written every few seconds while it is up.
+            NSMutableDictionary *data =
+                [@{@"hotspotActive": @(isHotspotActive)} mutableCopy];
+            if (isHotspotActive) {
+                NSArray *clients = hotspotProClients();
+                if (clients) {
+                    data[@"hotspotClientCount"] = @(clients.count);
+                    if (clients.count == 1) {
+                        NSDictionary *only = clients.firstObject;
+                        id name = [only isKindOfClass:[NSDictionary class]] ? only[@"name"] : nil;
+                        if ([name isKindOfClass:[NSString class]] && [name length])
+                            data[@"hotspotClientName"] = name;
+                    }
+                }
+            }
+
             dispatch_async(dispatch_get_main_queue(), ^{
-                NSDictionary *data = @{@"hotspotActive": @(isHotspotActive)};
                 if (_widgetType1 == 5) [(id)_widgetView1 updateForData:data];
                 if (_widgetType2 == 5) [(id)_widgetView2 updateForData:data];
                 if (_widgetType3 == 5) [(id)_widgetView3 updateForData:data];

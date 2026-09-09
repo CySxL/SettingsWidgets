@@ -13,6 +13,8 @@
     self.statusLabel = [[UILabel alloc] init];
     self.statusLabel.font = [UIFont boldSystemFontOfSize:13];
     self.statusLabel.textAlignment = NSTextAlignmentCenter;
+    self.statusLabel.adjustsFontSizeToFitWidth = YES;
+    self.statusLabel.minimumScaleFactor = 0.8;
     self.statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:self.statusLabel];
 
@@ -35,7 +37,22 @@
 -(void)updateForData:(NSDictionary *)data {
     if (data[@"hotspotActive"]) {
         BOOL isActive = [data[@"hotspotActive"] boolValue];
-        self.statusLabel.text = isActive ? @"Status: Enabled" : @"Status: Disabled";
+        NSString *status = isActive ? @"Enabled" : @"Disabled";
+        // Absent unless HotspotPro is installed and counting, which is why the
+        // stock wording has to survive underneath.
+        NSNumber *count = data[@"hotspotClientCount"];
+        if (isActive && count) {
+            NSUInteger n = [count unsignedIntegerValue];
+            NSString *who = data[@"hotspotClientName"];
+            if (!who) {
+                if (n == 0) who = @"No devices";
+                else if (n == 1) who = @"1 device";
+                else who = [NSString stringWithFormat:@"%lu devices", (unsigned long)n];
+            }
+            self.statusLabel.text = [NSString stringWithFormat:@"%@ · %@", status, who];
+        } else {
+            self.statusLabel.text = [NSString stringWithFormat:@"Status: %@", status];
+        }
     }
     if (data[@"hotspotUsage"]) {
         unsigned long long bytes = [data[@"hotspotUsage"] unsignedLongLongValue];
