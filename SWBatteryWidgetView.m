@@ -38,7 +38,7 @@
 }
 -(void)updateBatteryLevelText {
 	if (!_useBatteryHealth) {
-		_healthLabel.text = [NSString stringWithFormat:@"Battery Level: %.0f%%", [UIDevice currentDevice].batteryLevel * 100];
+		_healthLabel.text = [NSString stringWithFormat:@"%@: %.0f%%", localizedStringForKey(@"BATTERY_LEVEL"), [UIDevice currentDevice].batteryLevel * 100];
 	}
 }
 -(void)updateForData:(NSDictionary *)receievedData {

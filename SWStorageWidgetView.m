@@ -4,7 +4,7 @@
 -(instancetype)init {
     if (self = [super init]) {
         self.iconImage = @"storageicon";
-        self.widgetHeaderLocalizationString = @"Storage";
+        self.widgetHeaderLocalizationString = @"STORAGE_WIDGET_HEADER";
         self.prefsURL = @"prefs:root=General&path=STORAGE_MGMT";
     }
     return self;

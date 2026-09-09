@@ -6,7 +6,7 @@
 -(instancetype)init {
     if (self = [super init]) {
         self.iconImage = @"utilityicon";
-        self.widgetHeaderLocalizationString = @"Utility";
+        self.widgetHeaderLocalizationString = @"UTILITY_WIDGET_HEADER";
         self.prefsURL = @"";
         self.hasPrefsURL = YES;
     }
