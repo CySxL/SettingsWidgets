@@ -463,7 +463,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
                     data[@"hotspotClientCount"] = @(clients.count);
                     if (clients.count == 1) {
                         NSDictionary *only = clients.firstObject;
-                        id name = [only isKindOfClass:[NSDictionary class]] ? only[@"name"] : nil;
+                        id name = [only isKindOfClass:[NSDictionary class]] ? only[@"deviceName"] : nil;
                         if ([name isKindOfClass:[NSString class]] && [name length])
                             data[@"hotspotClientName"] = name;
                     }
