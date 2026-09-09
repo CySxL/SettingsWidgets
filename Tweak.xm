@@ -20,7 +20,7 @@ int __isOSVersionAtLeast(int major, int minor, int patch) {
 @end
 
 @interface SWWidgetContainerView (CustomBackground)
--(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 transparentBackground:(BOOL)trans widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4;
+-(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4;
 -(void)applyCustomBackgrounds;
 @end
 
@@ -39,7 +39,6 @@ static int intForKey(NSString *key, int fallBack) {
 }
 
 static BOOL enabled;
-static BOOL transparentMode;
 static BOOL widget2Enabled, widget3Enabled, widget4Enabled;
 static int widgetCornerRadius, widgetHeight, widgetInset;
 static int widgetType1, widgetType2, widgetType3, widgetType4;
@@ -49,7 +48,6 @@ static void loadPrefs() {
 	CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
 
   	enabled = boolForKey(@"enabled", YES);
-	transparentMode = boolForKey(@"transparentMode", NO);
 
 	widgetHeight = intForKey(@"widgetHeight", 120);
 	widgetInset = intForKey(@"widgetInset", 15);
@@ -101,7 +99,7 @@ static void loadPrefs() {
     int w3 = widget3Enabled ? widgetType3 : 99;
     int w4 = widget4Enabled ? widgetType4 : 99;
 
-	[self.widgetContainerView setupWidgetsWithType1:widgetType1 type2:w2 type3:w3 type4:w4 transparentBackground:transparentMode widgetInset:widgetInset cornerRadius:widgetCornerRadius fontColor1:fontColor1 fontColor2:fontColor2 fontColor3:fontColor3 fontColor4:fontColor4];
+	[self.widgetContainerView setupWidgetsWithType1:widgetType1 type2:w2 type3:w3 type4:w4 widgetInset:widgetInset cornerRadius:widgetCornerRadius fontColor1:fontColor1 fontColor2:fontColor2 fontColor3:fontColor3 fontColor4:fontColor4];
 	[self.widgetContainerView setWidgetBackgrounds];
 
     [self.widgetContainerView applyCustomBackgrounds];

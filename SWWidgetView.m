@@ -50,7 +50,7 @@
                 [iconImage drawInRect:CGRectMake(0, 0, iconW, iconH)];
             }];
 
-            // 捕捉 roundedImage 物件本身，由 ARC 確保在主執行緒渲染完成前不被釋放
+            // The block holds roundedImage, so the CGImage stays alive until the main queue uses it.
             dispatch_async(dispatch_get_main_queue(), ^{
                 __strong typeof(weakSelf) strongSelf = weakSelf;
                 if (strongSelf) {

@@ -1,8 +1,6 @@
 #import "SWBatteryWidgetView.h"
 #import "utils.h"
 #import <objc/runtime.h>
-extern void ADClientSetValueForScalarKey(char *key, long long val);
-
 
 @implementation SWBatteryWidgetView
 -(NSString *)iconImage {
@@ -45,31 +43,6 @@ extern void ADClientSetValueForScalarKey(char *key, long long val);
 	BOOL useBatteryHealth = [receievedData[@"useBatteryHealth"] boolValue];
 	_useBatteryHealth = useBatteryHealth;
 	_healthLabel.text = useBatteryHealth ? [NSString stringWithFormat:@"%@: %@", localizedStringForKey(@"BATTERY_MAX_CAPACITY"), maximumCapacityPercent] : [NSString stringWithFormat:@"%@: %.0f%%", localizedStringForKey(@"BATTERY_LEVEL"), [UIDevice currentDevice].batteryLevel*100];
-	//_healthLabel.text = _useBatteryHealth ? [NSString stringWithFormat:@"Max Capacity: %@", _maximumCapacityPercent] : [NSString stringWithFormat:@"Battery Level: %.0f%%", [UIDevice currentDevice].batteryLevel*100];
 }
 
 @end
-
-/*
-
-requires: com.apple.private.iokit.batterydata entitlement, probably no sandbox
-
-extern "C"
-CFArrayRef IOPSCopyPowerSourcesByType(int type);
-
-int healthPercent;
-
-NSArray *sources = (__bridge NSArray *)IOPSCopyPowerSourcesByType(1);
-NSDictionary *batteryDict = sources[0];
-if (sources && sources.count && batteryDict[@"Maximum Capacity Percent"]) {
-	healthPercent = [batteryDict[@"Maximum Capacity Percent"] intValue];
-} else {
-	healthPercent = -1;
-}
-
-double constraintedHealthPercent = fmax(fmin(healthPercent / 100.0, 1.0), 0.0) * 100;
-
-int finalPercent = (int)constraintedHealthPercent;
-NSLog(@"correctedHealthPercent: %i", finalPercent);
-
-*/

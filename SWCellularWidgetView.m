@@ -24,10 +24,6 @@ static inline float BtoGB(unsigned long long bytes) {
 -(NSString *)prefsURL {
 	return @"prefs:root=MOBILE_DATA_SETTINGS_ID";
 }
--(void)setup {
-	[NSNotificationCenter.defaultCenter addObserver:self selector:@selector(updateForDataReceived:) name:@"SWCellularDataProcessedNotification" object:nil];
-	[super setup];
-}
 -(void)additionalSetup {
 
 	_loadingView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle: UIActivityIndicatorViewStyleMedium];
@@ -42,7 +38,6 @@ static inline float BtoGB(unsigned long long bytes) {
 	[_loadingView startAnimating];
 
     _dataUsageLabel = [[UILabel alloc] init];
-	//_useBatteryHealth ? [NSString stringWithFormat:@"Max Capacity: %@", _maximumCapacityPercent] : [NSString stringWithFormat:@"Battery Level: %.0f%%", [UIDevice currentDevice].batteryLevel*100];
 	_dataUsageLabel.font = [UIFont boldSystemFontOfSize:13];
     _dataUsageLabel.textAlignment = NSTextAlignmentCenter;
 	_dataUsageLabel.adjustsFontSizeToFitWidth = YES;

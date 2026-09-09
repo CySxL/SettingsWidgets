@@ -196,9 +196,6 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 }
 
 @implementation SWWidgetContainerView
--(CGSize)intrinsicContentSize {
-	return CGSizeMake(0, 120);
-}
 -(id)createWidgetViewWithClass:(Class)cls cornerRadius:(int)cornerRadius {
     UIView *view = [[cls alloc] init];
     view.layer.cornerRadius = cornerRadius;
@@ -223,10 +220,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
         default: return [UIView class];
     }
 }
--(void)setupWidgetsWithType1:(SWWidgetType)widgetType1 type2:(SWWidgetType)widgetType2 transparentBackground:(BOOL)transparent widgetInset:(int)inset cornerRadius:(int)cornerRadius {
-    [self setupWidgetsWithType1:widgetType1 type2:widgetType2 type3:99 type4:99 transparentBackground:transparent widgetInset:inset cornerRadius:cornerRadius fontColor1:2 fontColor2:2 fontColor3:2 fontColor4:2];
-}
--(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 transparentBackground:(BOOL)trans widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4 {
+-(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4 {
 	_widgetType1 = w1; _widgetType2 = w2; _widgetType3 = w3; _widgetType4 = w4;
 	
     Class c1 = (w1 != 99) ? [self classForType:w1] : [UIView class];
