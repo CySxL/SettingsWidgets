@@ -31,7 +31,10 @@
 	[_healthLabel.bottomAnchor constraintEqualToAnchor: self.bottomAnchor constant: -15].active = YES;
 	[_healthLabel.leadingAnchor constraintEqualToAnchor: self.leadingAnchor constant: 10].active = YES;
 	[_healthLabel.trailingAnchor constraintEqualToAnchor: self.trailingAnchor constant: -10].active = YES;
-    //});
+}
+-(void)dealloc {
+	[NSNotificationCenter.defaultCenter removeObserver:self];
+	UIDevice.currentDevice.batteryMonitoringEnabled = NO;
 }
 -(void)updateBatteryLevelText {
 	if (!_useBatteryHealth) {

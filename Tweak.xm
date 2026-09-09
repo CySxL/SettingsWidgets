@@ -28,14 +28,19 @@ static id getPref(NSString *key) {
 	return (id)CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, CFSTR("com.shepgoba.swprefs")));
 }
 
+// A plist can hold anything, so check the type before asking for a value.
+static BOOL isNumberLike(id value) {
+	return [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSString class]];
+}
+
 static BOOL boolForKey(NSString *key, BOOL fallBack) {
 	id result = getPref(key);
-	return result ? [result boolValue] : fallBack;
+	return isNumberLike(result) ? [result boolValue] : fallBack;
 }
 
 static int intForKey(NSString *key, int fallBack) {
 	id result = getPref(key);
-	return result ? [result intValue] : fallBack;
+	return isNumberLike(result) ? [result intValue] : fallBack;
 }
 
 static BOOL enabled;

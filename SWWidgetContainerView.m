@@ -27,7 +27,7 @@
 -(id)storageSpace;
 @end
 
-@interface BatteryHealthUIController
+@interface BatteryHealthUIController : NSObject
 -(NSString *)getChargeCapacityRemaining;
 -(void)updateData;
 @end
@@ -69,9 +69,11 @@ static id getPref(NSString *key) {
     return (id)CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, CFSTR("com.shepgoba.swprefs")));
 }
 
+// A plist can hold anything, so check the type before asking for a value.
 static BOOL getBoolPref(NSString *key, BOOL defaultVal) {
     id val = getPref(key);
-    return val ? [val boolValue] : defaultVal;
+    if (![val isKindOfClass:[NSNumber class]] && ![val isKindOfClass:[NSString class]]) return defaultVal;
+    return [val boolValue];
 }
 
 static NSString *getIPAddress() {
@@ -197,14 +199,18 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 
 @implementation SWWidgetContainerView
 -(id)createWidgetViewWithClass:(Class)cls cornerRadius:(int)cornerRadius {
+    if (!cls) return nil;
     UIView *view = [[cls alloc] init];
+    if (!view) return nil;
     view.layer.cornerRadius = cornerRadius;
     if (@available(iOS 13.0, *)) view.layer.cornerCurve = kCACornerCurveContinuous;
     else view.layer.continuousCorners = YES;
     view.translatesAutoresizingMaskIntoConstraints = NO;
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(openPrefsURL)];
-    tap.cancelsTouchesInView = NO;
-    [view addGestureRecognizer:tap];
+    if ([view respondsToSelector:@selector(openPrefsURL)]) {
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(openPrefsURL)];
+        tap.cancelsTouchesInView = NO;
+        [view addGestureRecognizer:tap];
+    }
     if ([view respondsToSelector:@selector(setup)]) [(id)view setup];
     return (id)view;
 }
@@ -217,21 +223,16 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
         case 4: return NSClassFromString(@"SWUtilityWidgetView");
         case 5: return NSClassFromString(@"SWHotspotWidgetView");
         case 6: return NSClassFromString(@"SWBluetoothWidgetView");
-        default: return [UIView class];
+        default: return Nil;
     }
 }
 -(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4 {
-	_widgetType1 = w1; _widgetType2 = w2; _widgetType3 = w3; _widgetType4 = w4;
-	
-    Class c1 = (w1 != 99) ? [self classForType:w1] : [UIView class];
-    Class c2 = (w2 != 99) ? [self classForType:w2] : [UIView class];
-    Class c3 = (w3 != 99) ? [self classForType:w3] : [UIView class];
-    Class c4 = (w4 != 99) ? [self classForType:w4] : [UIView class];
+	if (w1 != 99) { _widgetView1 = [self createWidgetViewWithClass:[self classForType:w1] cornerRadius:cr]; if (_widgetView1) [self addSubview:_widgetView1]; else w1 = 99; }
+	if (w2 != 99) { _widgetView2 = [self createWidgetViewWithClass:[self classForType:w2] cornerRadius:cr]; if (_widgetView2) [self addSubview:_widgetView2]; else w2 = 99; }
+    if (w3 != 99) { _widgetView3 = [self createWidgetViewWithClass:[self classForType:w3] cornerRadius:cr]; if (_widgetView3) [self addSubview:_widgetView3]; else w3 = 99; }
+    if (w4 != 99) { _widgetView4 = [self createWidgetViewWithClass:[self classForType:w4] cornerRadius:cr]; if (_widgetView4) [self addSubview:_widgetView4]; else w4 = 99; }
 
-	if (w1 != 99) { _widgetView1 = [self createWidgetViewWithClass:c1 cornerRadius:cr]; [self addSubview:_widgetView1]; }
-	if (w2 != 99) { _widgetView2 = [self createWidgetViewWithClass:c2 cornerRadius:cr]; [self addSubview:_widgetView2]; }
-    if (w3 != 99) { _widgetView3 = [self createWidgetViewWithClass:c3 cornerRadius:cr]; [self addSubview:_widgetView3]; }
-    if (w4 != 99) { _widgetView4 = [self createWidgetViewWithClass:c4 cornerRadius:cr]; [self addSubview:_widgetView4]; }
+	_widgetType1 = w1; _widgetType2 = w2; _widgetType3 = w3; _widgetType4 = w4;
 
     if (_widgetView1 && [_widgetView1 respondsToSelector:@selector(applyFontColorStyle:)]) [(id)_widgetView1 applyFontColorStyle:fc1];
     if (_widgetView2 && [_widgetView2 respondsToSelector:@selector(applyFontColorStyle:)]) [(id)_widgetView2 applyFontColorStyle:fc2];
@@ -307,8 +308,9 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 			[storageSettingsBundle load];
 			Class healthClass = objc_getClass("BatteryHealthUIController");
 			NSString *maximumCapacityPercent = @"—";
-			if (healthClass) {
-				BatteryHealthUIController *instance = [healthClass new];
+			BatteryHealthUIController *instance = [healthClass new];
+			if ([instance respondsToSelector:@selector(updateData)] &&
+			    [instance respondsToSelector:@selector(getChargeCapacityRemaining)]) {
 				[instance updateData];
 				NSString *reported = [instance getChargeCapacityRemaining];
 				if ([reported isKindOfClass:[NSString class]]) maximumCapacityPercent = reported;
@@ -334,9 +336,12 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 			if (monitor && [monitor respondsToSelector:@selector(updateDiskSpace)]) [monitor updateDiskSpace];
 			if ([monitor respondsToSelector:@selector(storageSpace)]) {
                 id sp = [monitor performSelector:@selector(storageSpace)];
-                usedDiskSpace = [[sp valueForKey:@"usedBytes"] unsignedLongLongValue];
-            } else {
-                usedDiskSpace = totalDiskSpace - monitor.lastFree;
+                id used = [sp respondsToSelector:@selector(usedBytes)] ? [sp valueForKey:@"usedBytes"] : nil;
+                if ([used isKindOfClass:[NSNumber class]]) usedDiskSpace = [used unsignedLongLongValue];
+            }
+            if (usedDiskSpace == 0 && [monitor respondsToSelector:@selector(lastFree)]) {
+                uint64_t free = monitor.lastFree;
+                if (free <= totalDiskSpace) usedDiskSpace = totalDiskSpace - free;
             }
 			dispatch_async(dispatch_get_main_queue(), ^{
 				NSDictionary *data = @{@"usedDiskSpace": @(usedDiskSpace), @"totalDiskSpace": @(totalDiskSpace)};
@@ -369,7 +374,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             }
             
             CoreTelephonyClient_Decl *client = nil;
-            if (cacheClass) {
+            if ([cacheClass respondsToSelector:@selector(sharedInstance)]) {
                 id cache = [cacheClass performSelector:@selector(sharedInstance)];
                 if (cache && [cache respondsToSelector:@selector(client)]) {
                     client = [cache valueForKey:@"client"];
@@ -442,7 +447,8 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             }
             if (!isHotspotActive) {
                 NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/com.apple.MobileInternetSharing.plist"];
-                if (dict && [dict[@"1022"] intValue] != 0) {
+                id sharing = dict[@"1022"];
+                if ([sharing isKindOfClass:[NSNumber class]] && [sharing intValue] != 0) {
                     isHotspotActive = YES;
                 }
             }
@@ -480,7 +486,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
             // BluetoothManager asserts unless it is created and used on the main thread.
             dispatch_async(dispatch_get_main_queue(), ^{
                 Class btClass = NSClassFromString(@"BluetoothManager");
-                _btManager = btClass ? [btClass performSelector:@selector(sharedInstance)] : nil;
+                _btManager = [btClass respondsToSelector:@selector(sharedInstance)] ? [btClass performSelector:@selector(sharedInstance)] : nil;
                 if (_btManager && !_btObserving) {
                     _btObserving = YES;
                     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
@@ -501,7 +507,8 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
     id manager = _btManager;
     NSString *devName = nil;
     if (manager) {
-        NSArray *devices = [manager performSelector:@selector(connectedDevices)];
+        NSArray *devices = [manager respondsToSelector:@selector(connectedDevices)] ?
+            [manager performSelector:@selector(connectedDevices)] : nil;
         if (![devices isKindOfClass:[NSArray class]] || devices.count == 0) {
             if ([manager respondsToSelector:@selector(pairedDevices)]) {
                 NSArray *paired = [manager performSelector:@selector(pairedDevices)];

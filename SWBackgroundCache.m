@@ -145,7 +145,7 @@ NSDictionary *SWLoadBackgroundCache(NSString *sourceFilename) {
     if (![meta isKindOfClass:[NSDictionary class]]) return nil;
 
     NSString *signature = SWSourceSignature(fullPath);
-    if (signature && ![meta[@"signature"] isEqualToString:signature]) return nil;
+    if (!signature || ![meta[@"signature"] isEqualToString:signature]) return nil;
 
     NSInteger n = [meta[@"frames"] integerValue];
     if (n <= 0) return nil;
@@ -174,7 +174,7 @@ UIImage *SWLoadBackgroundFirstFrame(NSString *sourceFilename) {
     if (![meta isKindOfClass:[NSDictionary class]]) return nil;
 
     NSString *signature = SWSourceSignature(fullPath);
-    if (signature && ![meta[@"signature"] isEqualToString:signature]) return nil;
+    if (!signature || ![meta[@"signature"] isEqualToString:signature]) return nil;
     if ([meta[@"frames"] integerValue] <= 0) return nil;
 
     return SWDecodeImageFile([cacheDir stringByAppendingPathComponent:@"frame_000.png"]);
