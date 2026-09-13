@@ -12,11 +12,15 @@
 
 @interface SWWidgetView ()
 @property (nonatomic, strong) UIImageView *customBackgroundImageView;
+@property (nonatomic, assign) BOOL backgroundAnimationAllowed;
 @end
 
 @implementation SWWidgetView
 -(instancetype)init {
-    if (self = [super init]) self.hasPrefsURL = YES;
+    if (self = [super init]) {
+        self.hasPrefsURL = YES;
+        self.backgroundAnimationAllowed = YES;
+    }
     return self;
 }
 -(void)setup {
@@ -130,7 +134,8 @@
             if (!strongSelf) return;
             strongSelf.customBackgroundImageView.animationImages = frames;
             strongSelf.customBackgroundImageView.animationDuration = duration > 0 ? duration : frames.count * 0.1;
-            [strongSelf.customBackgroundImageView startAnimating];
+            // The decode can finish after the page has been navigated away from.
+            if (strongSelf.backgroundAnimationAllowed) [strongSelf.customBackgroundImageView startAnimating];
         });
     });
 }
@@ -166,6 +171,15 @@ static void applyColorToSubviews(UIView *view, UIColor *color, UILabel *excludeL
 		if (!managerClass) managerClass = objc_getClass("PSURLManager");
 		[[managerClass sharedManager] processURL:[NSURL URLWithString:self.prefsURL] animated: YES fromSearch:NO withCompletion:nil];
 	}
+}
+-(void)setBackgroundAnimating:(BOOL)animating {
+    self.backgroundAnimationAllowed = animating;
+    if (self.customBackgroundImageView.animationImages.count < 2) return;
+    if (animating) {
+        if (!self.customBackgroundImageView.isAnimating) [self.customBackgroundImageView startAnimating];
+    } else {
+        [self.customBackgroundImageView stopAnimating];
+    }
 }
 -(void)additionalSetup {}
 -(void)updateForBigWidgetView {}

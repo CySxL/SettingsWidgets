@@ -110,6 +110,14 @@ static void loadPrefs() {
     // not know about the custom backgrounds.
     [self.widgetContainerView applyCustomBackgrounds];
 }
+-(void)viewDidAppear:(BOOL)arg1 {
+	%orig;
+	[self.widgetContainerView setWidgetsAnimating:YES];
+}
+-(void)viewDidDisappear:(BOOL)arg1 {
+	%orig;
+	[self.widgetContainerView setWidgetsAnimating:NO];
+}
 -(void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
 	%orig;
 	[self.widgetContainerView setWidgetBackgrounds];

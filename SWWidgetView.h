@@ -14,4 +14,5 @@ typedef int SWWidgetType;
 -(void)updateForBigWidgetView;
 -(void)updateForData:(NSDictionary *)data;
 -(void)applyFontColorStyle:(NSInteger)style;
+-(void)setBackgroundAnimating:(BOOL)animating;
 @end

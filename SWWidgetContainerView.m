@@ -587,4 +587,13 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 
     [self setWidgetBackgrounds];
 }
+// A GIF kept animating for as long as the root page was in the hierarchy, which
+// includes the whole time a subpage is pushed over it.
+-(void)setWidgetsAnimating:(BOOL)animating {
+    UIView *views[4] = { _widgetView1, _widgetView2, _widgetView3, _widgetView4 };
+    for (int i = 0; i < 4; i++) {
+        if ([views[i] respondsToSelector:@selector(setBackgroundAnimating:)])
+            [(id)views[i] setBackgroundAnimating:animating];
+    }
+}
 @end
