@@ -62,6 +62,10 @@
     int _widgetType4;
     id _btManager;
     BOOL _btObserving;
+    // Decided once in applyCustomBackgrounds, so setWidgetBackgrounds can repaint
+    // on a trait change without reading preferences or undoing a custom background.
+    BOOL _hasCustomBg[4];
+    BOOL _transparent[4];
 }
 @end
 
@@ -548,48 +552,39 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 -(void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
+// Repaints only. It runs on every trait change, so it reads nothing: what each
+// slot wants was settled in applyCustomBackgrounds. Painting the grouped colour
+// back over a slot with a custom background is what turned an image with alpha
+// opaque after one rotation.
 -(void)setWidgetBackgrounds {
-    CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
-    
     UIColor *bgColor = [UIColor whiteColor];
 	if (@available(iOS 13, *)) {
 		if ([UITraitCollection currentTraitCollection].userInterfaceStyle == UIUserInterfaceStyleDark) {
 			bgColor = UIColor.tableCellGroupedBackgroundColor;
 		}
 	}
-    
-	if (_widgetView1) _widgetView1.backgroundColor = getBoolPref(@"transparentMode1", NO) ? UIColor.clearColor : bgColor;
-	if (_widgetView2) _widgetView2.backgroundColor = getBoolPref(@"transparentMode2", NO) ? UIColor.clearColor : bgColor;
-    if (_widgetView3) _widgetView3.backgroundColor = getBoolPref(@"transparentMode3", NO) ? UIColor.clearColor : bgColor;
-    if (_widgetView4) _widgetView4.backgroundColor = getBoolPref(@"transparentMode4", NO) ? UIColor.clearColor : bgColor;
+
+    UIView *views[4] = { _widgetView1, _widgetView2, _widgetView3, _widgetView4 };
+    for (int i = 0; i < 4; i++) {
+        if (!views[i]) continue;
+        views[i].backgroundColor = (_hasCustomBg[i] || _transparent[i]) ? UIColor.clearColor : bgColor;
+    }
 }
 -(void)applyCustomBackgrounds {
     CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
-    
-    BOOL c1 = getBoolPref(@"customBgEnabled1", NO);
-    NSString *cp1 = getPref(@"customBgPath1");
-    BOOL c2 = getBoolPref(@"customBgEnabled2", NO);
-    NSString *cp2 = getPref(@"customBgPath2");
-    BOOL c3 = getBoolPref(@"customBgEnabled3", NO);
-    NSString *cp3 = getPref(@"customBgPath3");
-    BOOL c4 = getBoolPref(@"customBgEnabled4", NO);
-    NSString *cp4 = getPref(@"customBgPath4");
 
-    if (c1 && cp1.length > 0 && _widgetView1 && [_widgetView1 respondsToSelector:@selector(setCustomBackgroundImageWithPath:)]) {
-        [(id)_widgetView1 setCustomBackgroundImageWithPath:cp1];
-        _widgetView1.backgroundColor = UIColor.clearColor;
+    UIView *views[4] = { _widgetView1, _widgetView2, _widgetView3, _widgetView4 };
+    for (int i = 0; i < 4; i++) {
+        _transparent[i] = getBoolPref([NSString stringWithFormat:@"transparentMode%d", i + 1], NO);
+        _hasCustomBg[i] = NO;
+        if (!views[i] || ![views[i] respondsToSelector:@selector(setCustomBackgroundImageWithPath:)]) continue;
+        if (!getBoolPref([NSString stringWithFormat:@"customBgEnabled%d", i + 1], NO)) continue;
+        NSString *path = getPref([NSString stringWithFormat:@"customBgPath%d", i + 1]);
+        if (![path isKindOfClass:[NSString class]] || path.length == 0) continue;
+        [(id)views[i] setCustomBackgroundImageWithPath:path];
+        _hasCustomBg[i] = YES;
     }
-    if (c2 && cp2.length > 0 && _widgetView2 && [_widgetView2 respondsToSelector:@selector(setCustomBackgroundImageWithPath:)]) {
-        [(id)_widgetView2 setCustomBackgroundImageWithPath:cp2];
-        _widgetView2.backgroundColor = UIColor.clearColor;
-    }
-    if (c3 && cp3.length > 0 && _widgetView3 && [_widgetView3 respondsToSelector:@selector(setCustomBackgroundImageWithPath:)]) {
-        [(id)_widgetView3 setCustomBackgroundImageWithPath:cp3];
-        _widgetView3.backgroundColor = UIColor.clearColor;
-    }
-    if (c4 && cp4.length > 0 && _widgetView4 && [_widgetView4 respondsToSelector:@selector(setCustomBackgroundImageWithPath:)]) {
-        [(id)_widgetView4 setCustomBackgroundImageWithPath:cp4];
-        _widgetView4.backgroundColor = UIColor.clearColor;
-    }
+
+    [self setWidgetBackgrounds];
 }
 @end

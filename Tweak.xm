@@ -105,8 +105,9 @@ static void loadPrefs() {
     int w4 = widget4Enabled ? widgetType4 : 99;
 
 	[self.widgetContainerView setupWidgetsWithType1:widgetType1 type2:w2 type3:w3 type4:w4 widgetInset:widgetInset cornerRadius:widgetCornerRadius fontColor1:fontColor1 fontColor2:fontColor2 fontColor3:fontColor3 fontColor4:fontColor4];
-	[self.widgetContainerView setWidgetBackgrounds];
 
+    // Settles what each slot wants and paints; setWidgetBackgrounds alone would
+    // not know about the custom backgrounds.
     [self.widgetContainerView applyCustomBackgrounds];
 }
 -(void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
