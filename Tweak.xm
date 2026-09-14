@@ -13,7 +13,10 @@ int __isOSVersionAtLeast(int major, int minor, int patch) {
 	return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version];
 }
 
-#define MIN_WIDGET_HEIGHT 100
+// A sanity floor for a hand-edited plist, not the slider's minimum, which is 100:
+// 12.5 top inset + 29 icon + 16 for one 13 pt line + 15 bottom inset is where the
+// label starts colliding with the icon.
+#define MIN_WIDGET_HEIGHT 73
 
 @interface UITraitCollection (iOS13)
 +(UITraitCollection *)currentTraitCollection;
