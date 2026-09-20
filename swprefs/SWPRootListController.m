@@ -27,9 +27,50 @@
 
 - (NSArray *)specifiers {
     if (!_specifiers) {
-        _specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
+        NSMutableArray *specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
+
+        [self removeRowsForDisabledWidgets:specifiers];
+        _specifiers = specifiers;
     }
     return _specifiers;
+}
+
+// Widgets 2-4 have an enable switch. With it off the widget is not built at all,
+// so its type, backgrounds and font colour are five rows that read as settings
+// and change nothing. The switch itself and its group header stay.
+- (void)removeRowsForDisabledWidgets:(NSMutableArray *)specifiers {
+    NSMutableSet *hiddenKeys = [NSMutableSet set];
+    NSMutableSet *hiddenIDs = [NSMutableSet set];
+    for (int n = 2; n <= 4; n++) {
+        id enabled = CFBridgingRelease(CFPreferencesCopyAppValue(
+            (__bridge CFStringRef)[NSString stringWithFormat:@"widget%dEnabled", n],
+            CFSTR("com.shepgoba.swprefs")));
+        BOOL on = [enabled isKindOfClass:[NSNumber class]] ? [enabled boolValue] : (n == 2);
+        if (on) continue;
+        for (NSString *key in @[@"widgetType%d", @"transparentMode%d", @"customBgEnabled%d", @"fontColor%d"])
+            [hiddenKeys addObject:[NSString stringWithFormat:key, n]];
+        [hiddenIDs addObject:[NSString stringWithFormat:@"chooseBgBtn%d", n]];
+    }
+    if (hiddenKeys.count == 0) return;
+
+    NSMutableIndexSet *drop = [NSMutableIndexSet indexSet];
+    [specifiers enumerateObjectsUsingBlock:^(PSSpecifier *spec, NSUInteger idx, BOOL *stop) {
+        NSString *key = [spec propertyForKey:@"key"];
+        NSString *identifier = [spec propertyForKey:@"id"];
+        if ([key isKindOfClass:[NSString class]] && [hiddenKeys containsObject:key]) [drop addIndex:idx];
+        else if ([identifier isKindOfClass:[NSString class]] && [hiddenIDs containsObject:identifier]) [drop addIndex:idx];
+    }];
+    [specifiers removeObjectsAtIndexes:drop];
+}
+
+- (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
+    [super setPreferenceValue:value specifier:specifier];
+
+    NSString *key = [specifier propertyForKey:@"key"];
+    if ([key isKindOfClass:[NSString class]] && [key hasPrefix:@"widget"] && [key hasSuffix:@"Enabled"]) {
+        _specifiers = nil;
+        [self reloadSpecifiers];
+    }
 }
 
 - (void)openURL:(NSString *)urlStr {
