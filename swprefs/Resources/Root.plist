@@ -76,6 +76,9 @@
             <key>validTitles</key><array><string>White</string><string>Black</string><string>Adaptive</string></array>
         </dict>
 
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Background Storage</string><key>footerText</key><string>Removes the picked image and its decoded frames for every widget whose custom background is switched off.</string></dict>
+		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Clear Unused Backgrounds</string><key>action</key><string>clearUnusedBackgrounds</string></dict>
+
 		<dict><key>cell</key><string>PSGroupCell</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Tweak by @shepgoba</string><key>action</key><string>openTwitter</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>GitHub @CySxL (iOS16 / roothide / Custom BG)</string><key>action</key><string>openGitHub</string></dict>

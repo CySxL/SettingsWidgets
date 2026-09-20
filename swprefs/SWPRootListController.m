@@ -84,6 +84,60 @@
 #pragma clang diagnostic pop
     }
 }
+- (void)showAlertTitled:(NSString *)title message:(NSString *)message {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+// Switching a custom background off leaves its image and decoded frames on disk,
+// which is what you want if it is going back on. This is the way back out, and it
+// only ever touches slots whose switch is already off.
+- (void)clearUnusedBackgrounds {
+    NSString *dir = jbroot(@"/var/mobile/Library/Preferences/SettingsWidgets");
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    NSMutableArray<NSString *> *paths = [NSMutableArray array];
+    for (int n = 1; n <= 4; n++) {
+        id on = CFBridgingRelease(CFPreferencesCopyAppValue(
+            (__bridge CFStringRef)[NSString stringWithFormat:@"customBgEnabled%d", n],
+            CFSTR("com.shepgoba.swprefs")));
+        if ([on isKindOfClass:[NSNumber class]] && [on boolValue]) continue;
+
+        NSString *prefix = [NSString stringWithFormat:@"bg%d.", n];
+        for (NSString *file in [fm contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+            if ([file hasPrefix:prefix]) [paths addObject:[dir stringByAppendingPathComponent:file]];
+        }
+        [paths addObject:[[dir stringByAppendingPathComponent:@".bgcache"]
+                          stringByAppendingPathComponent:[NSString stringWithFormat:@"bg%d", n]]];
+    }
+
+    unsigned long long freed = 0;
+    NSUInteger removed = 0;
+    for (NSString *path in paths) {
+        if (![fm fileExistsAtPath:path]) continue;
+        NSDirectoryEnumerator *walk = [fm enumeratorAtPath:path];
+        NSDictionary *attrs = [fm attributesOfItemAtPath:path error:nil];
+        if (attrs && ![attrs[NSFileType] isEqual:NSFileTypeDirectory]) {
+            freed += [attrs fileSize];
+        } else {
+            for (NSString *sub in walk) {
+                NSDictionary *subAttrs = [fm attributesOfItemAtPath:[path stringByAppendingPathComponent:sub] error:nil];
+                if (subAttrs) freed += [subAttrs fileSize];
+            }
+        }
+        if ([fm removeItemAtPath:path error:nil]) removed++;
+    }
+
+    if (removed == 0) {
+        [self showAlertTitled:@"Nothing to Clear" message:@"Every custom background that is switched off has already been cleared."];
+        return;
+    }
+    [self showAlertTitled:@"Cleared"
+                  message:[NSString stringWithFormat:@"Freed %@.",
+                           [NSByteCountFormatter stringFromByteCount:freed countStyle:NSByteCountFormatterCountStyleFile]]];
+}
+
 - (void)openTwitter { [self openURL:@"https://twitter.com/shepgoba"]; }
 - (void)openIconTwitter { [self openURL:@"https://twitter.com/JannikCrack"]; }
 - (void)openGitHub { [self openURL:@"https://github.com/CySxL"]; }
@@ -135,8 +189,15 @@
                 NSString *fileName = [NSString stringWithFormat:@"bg%ld.%@", (long)index, ext];
                 NSString *destPath = [dir stringByAppendingPathComponent:fileName];
                 
-                [fm copyItemAtURL:url toURL:[NSURL fileURLWithPath:destPath] error:nil];
-                
+                NSError *copyError = nil;
+                if (![fm copyItemAtURL:url toURL:[NSURL fileURLWithPath:destPath] error:&copyError]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self showAlertTitled:@"Could Not Save"
+                                      message:copyError.localizedDescription ?: @"The image could not be copied."];
+                    });
+                    return;
+                }
+
                 NSString *key = [NSString stringWithFormat:@"customBgPath%ld", (long)index];
                 CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)fileName, CFSTR("com.shepgoba.swprefs"));
                 CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
@@ -151,9 +212,7 @@
                 if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
 
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Success" message:@"Background image saved successfully!" preferredStyle:UIAlertControllerStyleAlert];
-                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-                    [self presentViewController:alert animated:YES completion:nil];
+                    [self showAlertTitled:@"Success" message:@"Background image saved successfully!"];
                 });
             }
         }];
