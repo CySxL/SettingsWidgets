@@ -10,6 +10,13 @@ swprefs_PRIVATE_FRAMEWORKS = Preferences
 swprefs_INSTALL_PATH = /Library/PreferenceBundles
 swprefs_CFLAGS = -fobjc-arc -Wno-deprecated-declarations
 
+# Version shown in the settings header, taken from control. Not named
+# PACKAGE_VERSION: theos uses that in package.mk for the deb's own version.
+SWP_VERSION := $(shell sed -n 's/^Version: //p' $(THEOS_PROJECT_DIR)/control)
+ifeq ($(SWP_VERSION),)
+$(error no Version line in $(THEOS_PROJECT_DIR)/control)
+endif
+swprefs_CFLAGS += -DPACKAGE_VERSION='"$(SWP_VERSION)"'
+
 include $(THEOS_MAKE_PATH)/bundle.mk
-swprefs_CFLAGS += -DTWEAK_VERSION=\"$(shell awk '/Version:/ {print $$2}' ../control)\"
 swprefs_FRAMEWORKS += PhotosUI

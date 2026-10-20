@@ -4,7 +4,6 @@
 <dict>
 	<key>items</key>
 	<array>
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Settings</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><true/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>enabled</string><key>label</key><string>Enabled</string></dict>
 		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Height</string></dict>
 		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>120</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetHeight</string><key>min</key><integer>100</integer><key>max</key><integer>280</integer><key>isSegmented</key><true/><key>showValue</key><true/><key>segmentCount</key><integer>10</integer></dict>
@@ -83,7 +82,6 @@
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Tweak by @shepgoba</string><key>action</key><string>openTwitter</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>GitHub @CySxL (iOS16 / roothide / Custom BG)</string><key>action</key><string>openGitHub</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Icon by @JannikCrack</string><key>action</key><string>openIconTwitter</string></dict>
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>SettingsWidgets v1.9.16</string></dict>
 	</array>
 	<key>title</key>
 	<string>SettingsWidgets</string>

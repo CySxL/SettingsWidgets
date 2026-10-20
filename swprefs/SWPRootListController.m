@@ -1,9 +1,148 @@
 #import "SWPRootListController.h"
 #import "SWBackgroundCache.h"
 #import <Preferences/PSSpecifier.h>
+#import <Preferences/PSTableCell.h>
 #import <PhotosUI/PhotosUI.h>
 #import <roothide.h>
 #import <spawn.h>
+
+static const CGFloat kSWPIconSide = 80.0;
+static const CGFloat kSWPHeaderGap = 16.0;
+// Estimated to fit the 254 pt beside the icon on a 14 Pro Max; layoutSubviews
+// shrinks the block if it does not.
+static const CGFloat kSWPNameSize = 34.0;
+static const CGFloat kSWPVersionSize = 15.0;
+static const CGFloat kSWPSchemeSize = 13.0;
+static const CGFloat kSWPNameToVersion = 24.0;
+static const CGFloat kSWPVersionToScheme = 19.0;
+
+static UIFont *SWPHeaderNameFont(CGFloat size) {
+    UIFontDescriptor *bold = [[UIFontDescriptor preferredFontDescriptorWithTextStyle:UIFontTextStyleLargeTitle]
+                                 fontDescriptorWithSymbolicTraits:UIFontDescriptorTraitBold];
+    return [UIFont fontWithDescriptor:bold size:size];
+}
+
+// theos defines exactly one of these, so nothing needs wiring in the Makefile.
+#if defined(THEOS_PACKAGE_SCHEME_ROOTHIDE)
+#define PACKAGE_SCHEME "roothide"
+#elif defined(THEOS_PACKAGE_SCHEME_ROOTLESS)
+#define PACKAGE_SCHEME "rootless"
+#elif defined(THEOS_PACKAGE_SCHEME_ROOTFUL)
+#define PACKAGE_SCHEME "rootful"
+#else
+#error theos defined no package scheme
+#endif
+
+// Where the name's first baseline sits relative to the icon's centre so that the
+// three lines together are centred on it.
+static CGFloat SWPNameBaselineOffset(CGFloat scale) {
+    UIFont *reference = SWPHeaderNameFont(kSWPNameSize * scale);
+    UIFont *scheme = [UIFont systemFontOfSize:kSWPSchemeSize * scale];
+    CGFloat height = reference.ascender + (kSWPNameToVersion + kSWPVersionToScheme) * scale - scheme.descender;
+    return reference.ascender - height / 2.0;
+}
+
+@interface SWPHeaderCell : PSTableCell
+@end
+
+@implementation SWPHeaderCell {
+    UILabel *_name;
+    UILabel *_version;
+    UILabel *_scheme;
+    UIStackView *_text;
+    NSLayoutConstraint *_nameBaseline;
+    CGFloat _scale;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:style reuseIdentifier:identifier specifier:specifier];
+    if (!self)
+        return nil;
+
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+    UIImageView *icon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon" inBundle:bundle withConfiguration:nil]];
+    icon.translatesAutoresizingMaskIntoConstraints = NO;
+    icon.contentMode = UIViewContentModeScaleAspectFill;
+    icon.clipsToBounds = YES;
+    icon.layer.cornerCurve = kCACornerCurveContinuous;
+    icon.layer.cornerRadius = kSWPIconSide * 0.225;
+    [self.contentView addSubview:icon];
+
+    _name = [[UILabel alloc] init];
+    _name.text = @"SettingsWidgets";
+    // The middle of the icon's purple gradient.
+    _name.textColor = [UIColor colorWithRed:0x98 / 255.0 green:0x6d / 255.0 blue:0xfa / 255.0 alpha:1.0];
+
+    _version = [[UILabel alloc] init];
+    _version.text = @"Version " PACKAGE_VERSION;
+    _version.textColor = [UIColor systemGrayColor];
+
+    _scheme = [[UILabel alloc] init];
+    _scheme.text = @PACKAGE_SCHEME.capitalizedString;
+    _scheme.textColor = [UIColor systemGrayColor];
+
+    // Spacing is baseline to baseline, so the large name does not push the two
+    // lines under it away with its own leading.
+    _text = [[UIStackView alloc] initWithArrangedSubviews:@[ _name, _version, _scheme ]];
+    _text.axis = UILayoutConstraintAxisVertical;
+    _text.alignment = UIStackViewAlignmentLeading;
+    _text.baselineRelativeArrangement = YES;
+    _text.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.contentView addSubview:_text];
+    _nameBaseline = [_name.firstBaselineAnchor constraintEqualToAnchor:icon.centerYAnchor];
+    [self applyTextScale:1.0];
+
+    UILayoutGuide *margins = self.contentView.layoutMarginsGuide;
+    [NSLayoutConstraint activateConstraints:@[
+        [icon.widthAnchor constraintEqualToConstant:kSWPIconSide],
+        [icon.heightAnchor constraintEqualToConstant:kSWPIconSide],
+        [icon.leadingAnchor constraintEqualToAnchor:margins.leadingAnchor],
+        [icon.centerYAnchor constraintEqualToAnchor:self.contentView.centerYAnchor],
+        [_text.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:kSWPHeaderGap],
+        _nameBaseline
+    ]];
+
+    return self;
+}
+
+// Fonts and spacing scale together so the three lines keep their proportions.
+// The icon is never scaled.
+- (void)applyTextScale:(CGFloat)scale {
+    if (scale == _scale)
+        return;
+    _scale = scale;
+    _name.font = SWPHeaderNameFont(kSWPNameSize * scale);
+    _version.font = [UIFont systemFontOfSize:kSWPVersionSize * scale];
+    _scheme.font = [UIFont systemFontOfSize:kSWPSchemeSize * scale];
+    [_text setCustomSpacing:kSWPNameToVersion * scale afterView:_name];
+    [_text setCustomSpacing:kSWPVersionToScheme * scale afterView:_version];
+    _nameBaseline.constant = SWPNameBaselineOffset(scale);
+}
+
+// Full size wherever the name fits beside the icon; a narrower phone shrinks the
+// whole block by the name's overflow rather than truncating it.
+- (void)layoutSubviews {
+    CGFloat available = CGRectGetWidth(self.contentView.layoutMarginsGuide.layoutFrame) - kSWPIconSide - kSWPHeaderGap;
+    CGFloat natural = [_name.text sizeWithAttributes:@{ NSFontAttributeName: SWPHeaderNameFont(kSWPNameSize) }].width;
+    [self applyTextScale:(available > 0 && natural > available) ? available / natural : 1.0];
+    [super layoutSubviews];
+}
+
+// The row carries the page's own heading, not a setting, so it takes no
+// selection, no separator and none of the grouped background.
+- (void)setSeparatorStyle:(UITableViewCellSeparatorStyle)style {
+    [super setSeparatorStyle:UITableViewCellSeparatorStyleNone];
+}
+
+- (void)setBackgroundColor:(UIColor *)color {
+    [super setBackgroundColor:[UIColor clearColor]];
+}
+
+- (UITableViewCellSelectionStyle)selectionStyle {
+    return UITableViewCellSelectionStyleNone;
+}
+
+@end
 
 @interface SWPRootListController () <PHPickerViewControllerDelegate>
 @property (nonatomic, assign) NSInteger currentPickingIndex;
@@ -28,6 +167,23 @@
 - (NSArray *)specifiers {
     if (!_specifiers) {
         NSMutableArray *specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
+
+        PSSpecifier *header = [PSSpecifier preferenceSpecifierNamed:@""
+                                                             target:self
+                                                                set:NULL
+                                                                get:NULL
+                                                             detail:nil
+                                                               cell:PSStaticTextCell
+                                                               edit:nil];
+        [header setProperty:[SWPHeaderCell class] forKey:@"cellClass"];
+        [header setProperty:@142 forKey:@"height"];
+        [specifiers insertObject:header atIndex:0];
+
+        // Without a group of its own the header renders as the first row of
+        // whatever section follows, sharing its background and separators.
+        PSSpecifier *first = [PSSpecifier emptyGroupSpecifier];
+        [first setProperty:@"Settings" forKey:@"label"];
+        [specifiers insertObject:first atIndex:1];
 
         [self removeRowsForDisabledWidgets:specifiers];
         _specifiers = specifiers;
