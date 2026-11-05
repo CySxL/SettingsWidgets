@@ -1,6 +1,5 @@
 #import "SWCellularWidgetView.h"
 #import <objc/runtime.h>
-#import <math.h>
 #import "utils.h"
 
 
@@ -9,10 +8,6 @@
 -(NSArray *)planItems;
 -(BOOL)isAirplaneModeEnabled;
 @end
-
-static inline float BtoGB(unsigned long long bytes) {
-	return (float)bytes / 1024 / 1024 / 1024;
-}
 
 @implementation SWCellularWidgetView
 -(NSString *)iconImage {
@@ -58,6 +53,8 @@ static inline float BtoGB(unsigned long long bytes) {
 	_dataUsageLabel.hidden = NO;
 
 	unsigned long long cellularDataUsage = [receievedData[@"cellularUsage"] unsignedLongLongValue];
-	_dataUsageLabel.text = [NSString stringWithFormat:@"%@: %.01fGB", localizedStringForKey(@"DATA_USAGE"), round(BtoGB(cellularDataUsage) * 10.0) / 10.0];
+	// Same formatter and units as the Storage and Hotspot widgets.
+	NSString *usage = [NSByteCountFormatter stringFromByteCount:cellularDataUsage countStyle:NSByteCountFormatterCountStyleFile];
+	_dataUsageLabel.text = [NSString stringWithFormat:@"%@: %@", localizedStringForKey(@"DATA_USAGE"), usage];
 }
 @end
