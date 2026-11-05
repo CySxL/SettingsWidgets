@@ -10,8 +10,8 @@ TWEAK_NAME = SettingsWidgets
 
 SettingsWidgets_FILES = $(wildcard *.m) Tweak.xm
 SettingsWidgets_CFLAGS = -fobjc-arc -O3
-SettingsWidgets_FRAMEWORKS = Foundation UIKit IOKit ImageIO CoreGraphics
-SettingsWidgets_PRIVATE_FRAMEWORKS = FrontBoardServices SpringBoardServices Preferences BluetoothManager
+SettingsWidgets_FRAMEWORKS = Foundation UIKit ImageIO CoreGraphics
+SettingsWidgets_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 SUBPROJECTS += swprefs
