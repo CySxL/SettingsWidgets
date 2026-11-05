@@ -29,7 +29,7 @@
     [self addSubview:self.bgBar];
 
     self.fillBar = [[UIView alloc] init];
-    self.fillBar.backgroundColor = [UIColor colorWithRed:173.0/255.0 green:171.0/255.0 blue:179.0/255.0 alpha:1.0];
+    self.fillBar.backgroundColor = [UIColor systemGray2Color];
     self.fillBar.layer.cornerRadius = 4;
     self.fillBar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.bgBar addSubview:self.fillBar];
