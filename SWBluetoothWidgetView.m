@@ -35,7 +35,7 @@
 }
 -(void)updateForData:(NSDictionary *)data {
     NSString *device = data[@"btDevice"];
-    if ([device isEqualToString:@"Not Connected"] || device.length == 0) {
+    if (![device isKindOfClass:[NSString class]] || device.length == 0) {
         self.statusLabel.text = @"Disconnected";
         self.deviceLabel.text = @"";
     } else {

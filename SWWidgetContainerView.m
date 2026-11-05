@@ -512,9 +512,9 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
         BOOL available = YES;
         if ([manager respondsToSelector:@selector(available)]) available = [[manager valueForKey:@"available"] boolValue];
         if (!available) return;
-        devName = @"Not Connected";
     }
-    NSDictionary *data = @{@"btDevice": devName};
+    // No btDevice key means nothing is connected.
+    NSDictionary *data = devName ? @{@"btDevice": devName} : @{};
     if (_widgetType1 == 6) [(id)_widgetView1 updateForData:data];
     if (_widgetType2 == 6) [(id)_widgetView2 updateForData:data];
     if (_widgetType3 == 6) [(id)_widgetView3 updateForData:data];
