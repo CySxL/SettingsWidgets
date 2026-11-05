@@ -294,6 +294,7 @@ static CGFloat SWPNameBaselineOffset(CGFloat scale) {
 }
 
 - (void)openTwitter { [self openURL:@"https://twitter.com/shepgoba"]; }
+- (void)openSourceCode { [self openURL:@"https://github.com/shepgoba/SettingsWidgets"]; }
 - (void)openIconTwitter { [self openURL:@"https://twitter.com/JannikCrack"]; }
 - (void)openGitHub { [self openURL:@"https://github.com/CySxL"]; }
 

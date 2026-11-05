@@ -80,6 +80,7 @@
 
 		<dict><key>cell</key><string>PSGroupCell</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Tweak by @shepgoba</string><key>action</key><string>openTwitter</string></dict>
+		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Source Code</string><key>action</key><string>openSourceCode</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>GitHub @CySxL (iOS16 / roothide / Custom BG)</string><key>action</key><string>openGitHub</string></dict>
 		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Icon by @JannikCrack</string><key>action</key><string>openIconTwitter</string></dict>
 	</array>
