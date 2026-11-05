@@ -170,7 +170,10 @@ static void applyColorToSubviews(UIView *view, UIColor *color, UILabel *excludeL
 	if (self.hasPrefsURL) {
 		static Class managerClass = nil;
 		if (!managerClass) managerClass = objc_getClass("PSURLManager");
-		[[managerClass sharedManager] processURL:[NSURL URLWithString:self.prefsURL] animated: YES fromSearch:NO withCompletion:nil];
+		if (![managerClass respondsToSelector:@selector(sharedManager)]) return;
+		id manager = [managerClass sharedManager];
+		if (![manager respondsToSelector:@selector(processURL:animated:fromSearch:withCompletion:)]) return;
+		[manager processURL:[NSURL URLWithString:self.prefsURL] animated: YES fromSearch:NO withCompletion:nil];
 	}
 }
 -(void)setBackgroundAnimating:(BOOL)animating {
