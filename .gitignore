@@ -1,6 +1,5 @@
 .theos/
 *.deb
 .DS_Store
-settingswidget_dev_note.md
 note.md*
 note-archive/
