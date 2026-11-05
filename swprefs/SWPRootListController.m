@@ -144,6 +144,121 @@ static CGFloat SWPNameBaselineOffset(CGFloat scale) {
 
 @end
 
+static const CGFloat kSWPAvatarSide = 38.0;
+
+// The row indents its text by the width of its image, so a symbol takes the same
+// square as the avatar.
+static UIImage *SWPSymbol(NSString *name, CGFloat side) {
+    UIImageSymbolConfiguration *configuration = [UIImageSymbolConfiguration configurationWithPointSize:20.0 weight:UIImageSymbolWeightMedium];
+    UIImage *symbol = [UIImage systemImageNamed:name withConfiguration:configuration] ?: [UIImage systemImageNamed:@"link" withConfiguration:configuration];
+    if (!symbol)
+        return nil;
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(side, side)];
+    UIImage *padded = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+        [symbol drawInRect:CGRectMake((side - symbol.size.width) / 2.0, (side - symbol.size.height) / 2.0, symbol.size.width, symbol.size.height)];
+    }];
+    return [padded imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
+@interface SWPCreditCell : PSTableCell
+@end
+
+// A row carrying swpBranch hangs off the row above it: a line from that row's
+// picture bends into it, and the row above, carrying swpBranchBelow, drops its
+// separator and draws the top of the line.
+@implementation SWPCreditCell {
+    UIImageView *_avatarView;
+    CAShapeLayer *_branch;
+}
+
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)identifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:identifier specifier:specifier];
+    if (!self)
+        return nil;
+    self.detailTextLabel.text = [specifier propertyForKey:@"subtitle"] ?: @"";
+    self.detailTextLabel.textColor = [UIColor systemGrayColor];
+    self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    BOOL branch = [[specifier propertyForKey:@"swpBranch"] isEqual:@YES];
+    if (branch || [[specifier propertyForKey:@"swpBranchBelow"] isEqual:@YES]) {
+        _branch = [CAShapeLayer layer];
+        _branch.fillColor = nil;
+        _branch.lineWidth = 1.5;
+        _branch.lineCap = kCALineCapRound;
+        [self.contentView.layer addSublayer:_branch];
+    }
+    if (branch) {
+        // An empty slot as wide as the picture, so the text lines up with the name above.
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(kSWPAvatarSide, 16.0), NO, [UIScreen mainScreen].scale);
+        [specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+        UIGraphicsEndImageContext();
+        UIImageSymbolConfiguration *small = [UIImageSymbolConfiguration configurationWithPointSize:11.0 weight:UIImageSymbolWeightSemibold];
+        NSTextAttachment *code = [[NSTextAttachment alloc] init];
+        code.image = [[UIImage systemImageNamed:@"chevron.left.forwardslash.chevron.right" withConfiguration:small] imageWithTintColor:[UIColor linkColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+        NSMutableAttributedString *title = [[NSMutableAttributedString alloc] init];
+        if (code.image)
+            [title appendAttributedString:[NSAttributedString attributedStringWithAttachment:code]];
+        [title appendAttributedString:[[NSAttributedString alloc] initWithString:[@"  " stringByAppendingString:specifier.name ?: @""]
+            attributes:@{ NSFontAttributeName: [UIFont systemFontOfSize:13.0], NSForegroundColorAttributeName: [UIColor linkColor] }]];
+        self.textLabel.attributedText = title;
+        // nil rather than empty, so the subtitle style centres the one line.
+        self.detailTextLabel.text = nil;
+        return self;
+    }
+    UIImage *avatar = [specifier propertyForKey:@"swpAvatar"];
+    if (![avatar isKindOfClass:[UIImage class]]) {
+        self.imageView.tintColor = [UIColor secondaryLabelColor];
+        return self;
+    }
+    // An empty image of the right size, so the row lays out before the avatar is drawn into it.
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(kSWPAvatarSide, kSWPAvatarSide), NO, [UIScreen mainScreen].scale);
+    [specifier setProperty:UIGraphicsGetImageFromCurrentImageContext() forKey:@"iconImage"];
+    UIGraphicsEndImageContext();
+    _avatarView = [[UIImageView alloc] initWithFrame:self.imageView.bounds];
+    _avatarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _avatarView.contentMode = UIViewContentModeScaleAspectFill;
+    _avatarView.clipsToBounds = YES;
+    _avatarView.layer.cornerRadius = kSWPAvatarSide * 0.5;
+    _avatarView.layer.minificationFilter = kCAFilterTrilinear;
+    _avatarView.image = avatar;
+    [self.imageView addSubview:_avatarView];
+    return self;
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    if (!_branch)
+        return;
+    BOOL branch = [[self.specifier propertyForKey:@"swpBranch"] isEqual:@YES];
+    if (!branch) {
+        for (UIView *view in self.subviews) {
+            if ([NSStringFromClass([view class]) hasSuffix:@"SeparatorView"])
+                view.hidden = YES;
+        }
+    }
+    _branch.strokeColor = [[UIColor systemGray3Color] resolvedColorWithTraitCollection:self.traitCollection].CGColor;
+    CGRect slot = [self.contentView convertRect:self.imageView.bounds fromView:self.imageView];
+    CGFloat x = round(CGRectGetMidX(slot));
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    if (branch) {
+        CGFloat y = round(CGRectGetMidY(slot)), r = 6.0;
+        [path moveToPoint:CGPointMake(x, 0)];
+        [path addLineToPoint:CGPointMake(x, y - r)];
+        [path addQuadCurveToPoint:CGPointMake(x + r, y) controlPoint:CGPointMake(x, y)];
+        [path addLineToPoint:CGPointMake(CGRectGetMaxX(slot), y)];
+    } else {
+        [path moveToPoint:CGPointMake(x, CGRectGetMaxY(slot) + 3.0)];
+        [path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+    }
+    _branch.path = path.CGPath;
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previous {
+    [super traitCollectionDidChange:previous];
+    [self setNeedsLayout];
+}
+
+@end
+
 @interface SWPRootListController () <PHPickerViewControllerDelegate>
 @property (nonatomic, assign) NSInteger currentPickingIndex;
 @end
@@ -185,9 +300,46 @@ static CGFloat SWPNameBaselineOffset(CGFloat scale) {
         [specifiers insertObject:first atIndex:1];
 
         [self removeRowsForDisabledWidgets:specifiers];
+        [self addCreditsTo:specifiers];
         _specifiers = specifiers;
     }
     return _specifiers;
+}
+
+// The original developer comes first with the upstream repository hanging under
+// that row; the fork's row comes last.
+- (void)addCreditsTo:(NSMutableArray *)specifiers {
+    PSSpecifier *credits = [PSSpecifier preferenceSpecifierNamed:@"Credits" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
+    [credits setProperty:@"© CySxL 2026" forKey:@"footerText"];
+    [specifiers addObject:credits];
+    // name, subtitle, action, picture; a row with no subtitle is a branch of the row above it
+    NSArray *rows = @[
+        @[ @"shepgoba", @"Original Developer", NSStringFromSelector(@selector(openTwitter)), @"" ],
+        @[ @"Source Code", @"", NSStringFromSelector(@selector(openSourceCode)), @"" ],
+        @[ @"JannikCrack", @"Icon", NSStringFromSelector(@selector(openIconTwitter)), @"" ],
+        @[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(openGitHub)), @"avatar" ]
+    ];
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+    PSSpecifier *previous = nil;
+    for (NSArray *row in rows) {
+        PSSpecifier *credit = [PSSpecifier preferenceSpecifierNamed:row[0] target:self set:NULL get:NULL detail:nil cell:PSLinkCell edit:nil];
+        [credit setProperty:[SWPCreditCell class] forKey:@"cellClass"];
+        [credit setProperty:row[1] forKey:@"subtitle"];
+        if ([row[1] length] == 0) {
+            [credit setProperty:@YES forKey:@"swpBranch"];
+            [credit setProperty:@34 forKey:@"height"];
+            [previous setProperty:@YES forKey:@"swpBranchBelow"];
+        } else {
+            UIImage *avatar = [row[3] length] ? [UIImage imageNamed:row[3] inBundle:bundle withConfiguration:nil] : nil;
+            if (avatar)
+                [credit setProperty:avatar forKey:@"swpAvatar"];
+            else
+                [credit setProperty:SWPSymbol(@"chevron.left.forwardslash.chevron.right", kSWPAvatarSide) forKey:@"iconImage"];
+        }
+        credit->action = NSSelectorFromString(row[2]);
+        [specifiers addObject:credit];
+        previous = credit;
+    }
 }
 
 // Widgets 2-4 have an enable switch. With it off the widget is not built at all,
