@@ -101,6 +101,7 @@
         self.customBackgroundImageView.contentMode = UIViewContentModeScaleAspectFill;
         self.customBackgroundImageView.clipsToBounds = YES;
         self.customBackgroundImageView.layer.cornerRadius = self.layer.cornerRadius;
+        self.customBackgroundImageView.layer.cornerCurve = kCACornerCurveContinuous;
         self.customBackgroundImageView.translatesAutoresizingMaskIntoConstraints = NO;
         [self insertSubview:self.customBackgroundImageView atIndex:0];
         [self.customBackgroundImageView.leadingAnchor constraintEqualToAnchor:self.leadingAnchor].active = YES;
