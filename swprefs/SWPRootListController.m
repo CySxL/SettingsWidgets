@@ -568,49 +568,72 @@ static BOOL SWPCustomOn(int n) {
 // Switching a custom background off leaves its image and decoded frames on disk,
 // which is what you want if it is going back on. This is the way back out, and it
 // only ever touches slots whose switch is already off.
-- (void)clearUnusedBackgrounds {
+- (NSArray<NSString *> *)unusedBackgroundPaths {
     NSString *dir = jbroot(@"/var/mobile/Library/Preferences/SettingsWidgets");
     NSFileManager *fm = [NSFileManager defaultManager];
+    NSArray *files = [fm contentsOfDirectoryAtPath:dir error:nil] ?: @[];
 
     NSMutableArray<NSString *> *paths = [NSMutableArray array];
     for (int n = 1; n <= 4; n++) {
-        id on = CFBridgingRelease(CFPreferencesCopyAppValue(
-            (__bridge CFStringRef)[NSString stringWithFormat:@"customBgEnabled%d", n],
-            CFSTR("com.shepgoba.swprefs")));
-        if ([on isKindOfClass:[NSNumber class]] && [on boolValue]) continue;
-
+        if (SWPCustomOn(n)) continue;
         NSString *prefix = [NSString stringWithFormat:@"bg%d.", n];
-        for (NSString *file in [fm contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+        for (NSString *file in files) {
             if ([file hasPrefix:prefix]) [paths addObject:[dir stringByAppendingPathComponent:file]];
         }
-        [paths addObject:[[dir stringByAppendingPathComponent:@".bgcache"]
-                          stringByAppendingPathComponent:[NSString stringWithFormat:@"bg%d", n]]];
+        NSString *cache = [[dir stringByAppendingPathComponent:@".bgcache"]
+                           stringByAppendingPathComponent:[NSString stringWithFormat:@"bg%d", n]];
+        if ([fm fileExistsAtPath:cache]) [paths addObject:cache];
     }
+    return paths;
+}
 
-    unsigned long long freed = 0;
-    NSUInteger removed = 0;
-    for (NSString *path in paths) {
-        if (![fm fileExistsAtPath:path]) continue;
-        NSDirectoryEnumerator *walk = [fm enumeratorAtPath:path];
-        NSDictionary *attrs = [fm attributesOfItemAtPath:path error:nil];
-        if (attrs && ![attrs[NSFileType] isEqual:NSFileTypeDirectory]) {
-            freed += [attrs fileSize];
-        } else {
-            for (NSString *sub in walk) {
-                NSDictionary *subAttrs = [fm attributesOfItemAtPath:[path stringByAppendingPathComponent:sub] error:nil];
-                if (subAttrs) freed += [subAttrs fileSize];
-            }
-        }
-        if ([fm removeItemAtPath:path error:nil]) removed++;
-    }
-
-    if (removed == 0) {
-        [self showAlertTitled:@"Nothing to Clear" message:@"Every custom background that is switched off has already been cleared."];
+- (void)clearUnusedBackgrounds {
+    NSArray<NSString *> *paths = [self unusedBackgroundPaths];
+    if (paths.count == 0) {
+        [self showAlertTitled:@"Nothing to Clear" message:@"No widget with Custom Background off has a saved image."];
         return;
     }
-    [self showAlertTitled:@"Cleared"
-                  message:[NSString stringWithFormat:@"Freed %@.",
-                           [NSByteCountFormatter stringFromByteCount:freed countStyle:NSByteCountFormatterCountStyleFile]]];
+    UIAlertController *confirm = [UIAlertController alertControllerWithTitle:@"Clear Unused Backgrounds"
+                                                                     message:@"Removes the saved image of every widget whose Custom Background is off."
+                                                              preferredStyle:UIAlertControllerStyleAlert];
+    [confirm addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    __weak SWPRootListController *weakSelf = self;
+    [confirm addAction:[UIAlertAction actionWithTitle:@"Clear" style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
+        [weakSelf removeBackgroundsAtPaths:paths];
+    }]];
+    [self presentViewController:confirm animated:YES completion:nil];
+}
+
+- (void)removeBackgroundsAtPaths:(NSArray<NSString *> *)paths {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    unsigned long long freed = 0;
+    NSError *failure = nil;
+    for (NSString *path in paths) {
+        if (![fm fileExistsAtPath:path]) continue;
+        unsigned long long size = 0;
+        NSDictionary *attrs = [fm attributesOfItemAtPath:path error:nil];
+        if (attrs && ![attrs[NSFileType] isEqual:NSFileTypeDirectory]) {
+            size = [attrs fileSize];
+        } else {
+            for (NSString *sub in [fm enumeratorAtPath:path]) {
+                NSDictionary *subAttrs = [fm attributesOfItemAtPath:[path stringByAppendingPathComponent:sub] error:nil];
+                if (subAttrs) size += [subAttrs fileSize];
+            }
+        }
+        NSError *error = nil;
+        if ([fm removeItemAtPath:path error:&error]) freed += size;
+        else if (!failure) failure = error;
+    }
+
+    if (failure) {
+        [self showAlertTitled:@"Could Not Clear"
+                      message:failure.localizedDescription ?: @"A saved image could not be removed."];
+        return;
+    }
+    NSString *message = freed > 0
+        ? [NSString stringWithFormat:@"Freed %@.", [NSByteCountFormatter stringFromByteCount:freed countStyle:NSByteCountFormatterCountStyleFile]]
+        : @"The saved images were removed.";
+    [self showAlertTitled:@"Backgrounds Cleared" message:message];
 }
 
 - (void)openTwitter { [self openURL:@"https://twitter.com/shepgoba"]; }
@@ -707,7 +730,7 @@ static BOOL SWPCustomOn(int n) {
             if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
 
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self showAlertTitled:@"Success" message:@"Background image saved successfully!"];
+                [self showAlertTitled:@"Background Saved" message:@"Tap Apply to show it."];
             });
         }];
     }
