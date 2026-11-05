@@ -376,7 +376,26 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
 @property (nonatomic, assign) NSInteger currentPickingIndex;
 @end
 
-@implementation SWPRootListController
+static BOOL SWPIsOn(NSString *key, BOOL fallback) {
+    id value = CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, CFSTR("com.shepgoba.swprefs")));
+    return [value isKindOfClass:[NSNumber class]] ? [value boolValue] : fallback;
+}
+
+static BOOL SWPWidgetOn(int n) {
+    return n == 1 || SWPIsOn([NSString stringWithFormat:@"widget%dEnabled", n], n == 2);
+}
+
+static BOOL SWPCustomOn(int n) {
+    return SWPIsOn([NSString stringWithFormat:@"customBgEnabled%d", n], NO);
+}
+
+// Index 0 unused, so slot n is widget n.
+@implementation SWPRootListController {
+    PSSpecifier *_widgetSwitch[5];
+    NSArray<PSSpecifier *> *_widgetRows[5];
+    PSSpecifier *_customSwitch[5];
+    PSSpecifier *_chooseButton[5];
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -416,7 +435,7 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
         PSSpecifier *first = [PSSpecifier preferenceSpecifierNamed:@"Settings" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
         [specifiers insertObject:first atIndex:1];
 
-        [self removeRowsForDisabledWidgets:specifiers];
+        [self takeGatedRowsFrom:specifiers];
         [self addCreditsTo:specifiers];
         _specifiers = specifiers;
     }
@@ -459,51 +478,73 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
     }
 }
 
-// Widgets 2-4 have an enable switch. With it off the widget is not built at all,
-// so its type, backgrounds and font colour are five rows that read as settings
-// and change nothing. The switch itself and its group header stay. A picker
-// button also leaves with its own Custom Background switch.
-- (void)removeRowsForDisabledWidgets:(NSMutableArray *)specifiers {
-    NSMutableSet *hiddenKeys = [NSMutableSet set];
-    NSMutableSet *hiddenIDs = [NSMutableSet set];
-    for (int n = 2; n <= 4; n++) {
-        id enabled = CFBridgingRelease(CFPreferencesCopyAppValue(
-            (__bridge CFStringRef)[NSString stringWithFormat:@"widget%dEnabled", n],
-            CFSTR("com.shepgoba.swprefs")));
-        BOOL on = [enabled isKindOfClass:[NSNumber class]] ? [enabled boolValue] : (n == 2);
-        if (on) continue;
-        for (NSString *key in @[@"widgetType%d", @"transparentMode%d", @"customBgEnabled%d", @"fontColor%d"])
-            [hiddenKeys addObject:[NSString stringWithFormat:key, n]];
-        [hiddenIDs addObject:[NSString stringWithFormat:@"chooseBgBtn%d", n]];
+// With its Enabled switch off, widgets 2-4 are not built at all, so the rows
+// under that switch leave the page. Choose Image also leaves while its Custom
+// Background is off. The rows sit directly under their switches in Root.plist.
+- (void)takeGatedRowsFrom:(NSMutableArray<PSSpecifier *> *)specifiers {
+    for (int n = 1; n <= 4; n++) {
+        NSString *switchKey = [NSString stringWithFormat:@"widget%dEnabled", n];
+        NSArray *rowKeys = @[[NSString stringWithFormat:@"widgetType%d", n],
+                             [NSString stringWithFormat:@"fontColor%d", n],
+                             [NSString stringWithFormat:@"transparentMode%d", n],
+                             [NSString stringWithFormat:@"customBgEnabled%d", n]];
+        NSString *customKey = rowKeys.lastObject;
+        NSString *chooseID = [NSString stringWithFormat:@"chooseBgBtn%d", n];
+        NSMutableArray *rows = [NSMutableArray array];
+        for (PSSpecifier *specifier in specifiers) {
+            NSString *key = [specifier propertyForKey:@"key"];
+            if ([key isEqual:switchKey]) _widgetSwitch[n] = specifier;
+            else if ([rowKeys containsObject:key]) [rows addObject:specifier];
+            if ([key isEqual:customKey]) _customSwitch[n] = specifier;
+            else if ([specifier.identifier isEqual:chooseID]) _chooseButton[n] = specifier;
+        }
+        _widgetRows[n] = rows;
     }
     for (int n = 1; n <= 4; n++) {
-        id custom = CFBridgingRelease(CFPreferencesCopyAppValue(
-            (__bridge CFStringRef)[NSString stringWithFormat:@"customBgEnabled%d", n],
-            CFSTR("com.shepgoba.swprefs")));
-        if (![custom isKindOfClass:[NSNumber class]] || ![custom boolValue])
-            [hiddenIDs addObject:[NSString stringWithFormat:@"chooseBgBtn%d", n]];
+        if (!SWPWidgetOn(n)) {
+            [specifiers removeObjectsInArray:_widgetRows[n]];
+            if (_chooseButton[n]) [specifiers removeObject:_chooseButton[n]];
+        } else if (!SWPCustomOn(n) && _chooseButton[n]) {
+            [specifiers removeObject:_chooseButton[n]];
+        }
     }
-    if (hiddenKeys.count == 0 && hiddenIDs.count == 0) return;
+}
 
-    NSMutableIndexSet *drop = [NSMutableIndexSet indexSet];
-    [specifiers enumerateObjectsUsingBlock:^(PSSpecifier *spec, NSUInteger idx, BOOL *stop) {
-        NSString *key = [spec propertyForKey:@"key"];
-        NSString *identifier = [spec propertyForKey:@"id"];
-        if ([key isKindOfClass:[NSString class]] && [hiddenKeys containsObject:key]) [drop addIndex:idx];
-        else if ([identifier isKindOfClass:[NSString class]] && [hiddenIDs containsObject:identifier]) [drop addIndex:idx];
-    }];
-    [specifiers removeObjectsAtIndexes:drop];
+- (void)syncGatedRowsForWidget:(int)n widgetOn:(BOOL)widgetOn customOn:(BOOL)customOn {
+    BOOL chooseOn = widgetOn && customOn;
+    NSArray *current = [self specifiers];
+    PSSpecifier *choose = _chooseButton[n];
+
+    if (choose && !chooseOn && [current containsObject:choose])
+        [self removeSpecifier:choose animated:YES];
+
+    NSArray *rows = _widgetRows[n];
+    if (_widgetSwitch[n] && rows.count) {
+        BOOL shown = [[self specifiers] containsObject:rows.firstObject];
+        if (widgetOn && !shown)
+            [self insertContiguousSpecifiers:rows afterSpecifier:_widgetSwitch[n] animated:YES];
+        else if (!widgetOn && shown)
+            [self removeContiguousSpecifiers:rows animated:YES];
+    }
+
+    if (choose && chooseOn && ![[self specifiers] containsObject:choose] && _customSwitch[n])
+        [self insertSpecifier:choose afterSpecifier:_customSwitch[n] animated:YES];
 }
 
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
     [super setPreferenceValue:value specifier:specifier];
 
-    NSString *key = [specifier propertyForKey:@"key"];
-    // widgetNEnabled ends in Enabled; customBgEnabledN ends in its number.
-    if ([key isKindOfClass:[NSString class]] &&
-        (([key hasPrefix:@"widget"] && [key hasSuffix:@"Enabled"]) || [key hasPrefix:@"customBgEnabled"])) {
-        _specifiers = nil;
-        [self reloadSpecifiers];
+    // The switch that moved is read from value; the other from the domain.
+    BOOL on = [value isKindOfClass:[NSNumber class]] && [value boolValue];
+    for (int n = 1; n <= 4; n++) {
+        if (specifier == _widgetSwitch[n]) {
+            [self syncGatedRowsForWidget:n widgetOn:on customOn:SWPCustomOn(n)];
+            break;
+        }
+        if (specifier == _customSwitch[n]) {
+            [self syncGatedRowsForWidget:n widgetOn:SWPWidgetOn(n) customOn:on];
+            break;
+        }
     }
 }
 
