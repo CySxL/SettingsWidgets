@@ -594,53 +594,71 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
     
     if ([provider hasItemConformingToTypeIdentifier:@"public.image"]) {
         [provider loadFileRepresentationForTypeIdentifier:@"public.image" completionHandler:^(NSURL *url, NSError *error) {
-            if (url) {
-                NSString *ext = url.pathExtension.lowercaseString;
-                if (ext.length == 0) ext = @"jpg";
-                
-                NSString *dir = jbroot(@"/var/mobile/Library/Preferences/SettingsWidgets");
-                NSFileManager *fm = [NSFileManager defaultManager];
-                if (![fm fileExistsAtPath:dir]) {
-                    [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
-                }
-                
-                NSArray *existingFiles = [fm contentsOfDirectoryAtPath:dir error:nil];
-                NSString *prefix = [NSString stringWithFormat:@"bg%ld.", (long)index];
-                for (NSString *file in existingFiles) {
-                    if ([file hasPrefix:prefix]) {
-                        [fm removeItemAtPath:[dir stringByAppendingPathComponent:file] error:nil];
-                    }
-                }
-                
-                NSString *fileName = [NSString stringWithFormat:@"bg%ld.%@", (long)index, ext];
-                NSString *destPath = [dir stringByAppendingPathComponent:fileName];
-                
-                NSError *copyError = nil;
-                if (![fm copyItemAtURL:url toURL:[NSURL fileURLWithPath:destPath] error:&copyError]) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self showAlertTitled:@"Could Not Save"
-                                      message:copyError.localizedDescription ?: @"The image could not be copied."];
-                    });
-                    return;
-                }
-
-                NSString *key = [NSString stringWithFormat:@"customBgPath%ld", (long)index];
-                CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)fileName, CFSTR("com.shepgoba.swprefs"));
-                CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
-
-                // Pre-decode the picked image now so opening Settings later is fast.
-                // Request background time so this finishes even if Settings is closed.
-                UIApplication *app = [UIApplication sharedApplication];
-                __block UIBackgroundTaskIdentifier bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
-                    if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
-                }];
-                SWRebuildBackgroundCache(fileName);
-                if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
-
+            if (!url) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [self showAlertTitled:@"Success" message:@"Background image saved successfully!"];
+                    [self showAlertTitled:@"Could Not Save"
+                                  message:error.localizedDescription ?: @"The image could not be read."];
                 });
+                return;
             }
+            NSString *ext = url.pathExtension.lowercaseString;
+            if (ext.length == 0) ext = @"jpg";
+            
+            NSString *dir = jbroot(@"/var/mobile/Library/Preferences/SettingsWidgets");
+            NSFileManager *fm = [NSFileManager defaultManager];
+            if (![fm fileExistsAtPath:dir]) {
+                [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+            }
+            
+            NSString *fileName = [NSString stringWithFormat:@"bg%ld.%@", (long)index, ext];
+            NSString *destPath = [dir stringByAppendingPathComponent:fileName];
+
+            // Copied aside first, so a failed copy leaves the old background in
+            // place. The temporary name must not start with bgN., which both
+            // the cleanup below and Clear Unused Backgrounds match on.
+            NSString *tempPath = [dir stringByAppendingPathComponent:[NSString stringWithFormat:@".incoming%ld.%@", (long)index, ext]];
+            [fm removeItemAtPath:tempPath error:nil];
+            NSError *copyError = nil;
+            BOOL saved = [fm copyItemAtURL:url toURL:[NSURL fileURLWithPath:tempPath] error:&copyError];
+            if (saved) {
+                if ([fm fileExistsAtPath:destPath])
+                    saved = [fm replaceItemAtURL:[NSURL fileURLWithPath:destPath] withItemAtURL:[NSURL fileURLWithPath:tempPath]
+                                  backupItemName:nil options:0 resultingItemURL:nil error:&copyError];
+                else
+                    saved = [fm moveItemAtPath:tempPath toPath:destPath error:&copyError];
+            }
+            if (!saved) {
+                [fm removeItemAtPath:tempPath error:nil];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self showAlertTitled:@"Could Not Save"
+                                  message:copyError.localizedDescription ?: @"The image could not be copied."];
+                });
+                return;
+            }
+
+            // An earlier pick with another extension.
+            NSString *prefix = [NSString stringWithFormat:@"bg%ld.", (long)index];
+            for (NSString *file in [fm contentsOfDirectoryAtPath:dir error:nil] ?: @[]) {
+                if ([file hasPrefix:prefix] && ![file isEqualToString:fileName])
+                    [fm removeItemAtPath:[dir stringByAppendingPathComponent:file] error:nil];
+            }
+
+            NSString *key = [NSString stringWithFormat:@"customBgPath%ld", (long)index];
+            CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)fileName, CFSTR("com.shepgoba.swprefs"));
+            CFPreferencesAppSynchronize(CFSTR("com.shepgoba.swprefs"));
+
+            // Pre-decode the picked image now so opening Settings later is fast.
+            // Request background time so this finishes even if Settings is closed.
+            UIApplication *app = [UIApplication sharedApplication];
+            __block UIBackgroundTaskIdentifier bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+                if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
+            }];
+            SWRebuildBackgroundCache(fileName);
+            if (bgTask != UIBackgroundTaskInvalid) { [app endBackgroundTask:bgTask]; bgTask = UIBackgroundTaskInvalid; }
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showAlertTitled:@"Success" message:@"Background image saved successfully!"];
+            });
         }];
     }
 }
