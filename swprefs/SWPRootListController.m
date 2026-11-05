@@ -499,8 +499,9 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
     [super setPreferenceValue:value specifier:specifier];
 
     NSString *key = [specifier propertyForKey:@"key"];
-    if ([key isKindOfClass:[NSString class]] && [key hasSuffix:@"Enabled"] &&
-        ([key hasPrefix:@"widget"] || [key hasPrefix:@"customBgEnabled"])) {
+    // widgetNEnabled ends in Enabled; customBgEnabledN ends in its number.
+    if ([key isKindOfClass:[NSString class]] &&
+        (([key hasPrefix:@"widget"] && [key hasSuffix:@"Enabled"]) || [key hasPrefix:@"customBgEnabled"])) {
         _specifiers = nil;
         [self reloadSpecifiers];
     }
