@@ -181,8 +181,7 @@ static CGFloat SWPNameBaselineOffset(CGFloat scale) {
 
         // Without a group of its own the header renders as the first row of
         // whatever section follows, sharing its background and separators.
-        PSSpecifier *first = [PSSpecifier emptyGroupSpecifier];
-        [first setProperty:@"Settings" forKey:@"label"];
+        PSSpecifier *first = [PSSpecifier preferenceSpecifierNamed:@"Settings" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
         [specifiers insertObject:first atIndex:1];
 
         [self removeRowsForDisabledWidgets:specifiers];
