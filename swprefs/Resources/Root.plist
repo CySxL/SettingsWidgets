@@ -20,7 +20,7 @@
 		</dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>transparentMode1</string><key>label</key><string>Transparent Background</string></dict>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><false/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>customBgEnabled1</string><key>label</key><string>Custom Background 1</string></dict>
-		<dict><key>cell</key><string>PSButtonCell</string><key>label</key><string>Choose Background for Widget 1</string><key>action</key><string>chooseImage1</string></dict>
+		<dict><key>cell</key><string>PSButtonCell</string><key>id</key><string>chooseBgBtn1</string><key>label</key><string>Choose Background for Widget 1</string><key>action</key><string>chooseImage1</string></dict>
         <dict>
             <key>cell</key><string>PSSegmentCell</string><key>default</key><integer>2</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>fontColor1</string>
             <key>validValues</key><array><integer>0</integer><integer>1</integer><integer>2</integer></array>

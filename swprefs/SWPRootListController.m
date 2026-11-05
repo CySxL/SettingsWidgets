@@ -453,7 +453,8 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
 
 // Widgets 2-4 have an enable switch. With it off the widget is not built at all,
 // so its type, backgrounds and font colour are five rows that read as settings
-// and change nothing. The switch itself and its group header stay.
+// and change nothing. The switch itself and its group header stay. A picker
+// button also leaves with its own Custom Background switch.
 - (void)removeRowsForDisabledWidgets:(NSMutableArray *)specifiers {
     NSMutableSet *hiddenKeys = [NSMutableSet set];
     NSMutableSet *hiddenIDs = [NSMutableSet set];
@@ -467,7 +468,14 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
             [hiddenKeys addObject:[NSString stringWithFormat:key, n]];
         [hiddenIDs addObject:[NSString stringWithFormat:@"chooseBgBtn%d", n]];
     }
-    if (hiddenKeys.count == 0) return;
+    for (int n = 1; n <= 4; n++) {
+        id custom = CFBridgingRelease(CFPreferencesCopyAppValue(
+            (__bridge CFStringRef)[NSString stringWithFormat:@"customBgEnabled%d", n],
+            CFSTR("com.shepgoba.swprefs")));
+        if (![custom isKindOfClass:[NSNumber class]] || ![custom boolValue])
+            [hiddenIDs addObject:[NSString stringWithFormat:@"chooseBgBtn%d", n]];
+    }
+    if (hiddenKeys.count == 0 && hiddenIDs.count == 0) return;
 
     NSMutableIndexSet *drop = [NSMutableIndexSet indexSet];
     [specifiers enumerateObjectsUsingBlock:^(PSSpecifier *spec, NSUInteger idx, BOOL *stop) {
@@ -483,7 +491,8 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
     [super setPreferenceValue:value specifier:specifier];
 
     NSString *key = [specifier propertyForKey:@"key"];
-    if ([key isKindOfClass:[NSString class]] && [key hasPrefix:@"widget"] && [key hasSuffix:@"Enabled"]) {
+    if ([key isKindOfClass:[NSString class]] && [key hasSuffix:@"Enabled"] &&
+        ([key hasPrefix:@"widget"] || [key hasPrefix:@"customBgEnabled"])) {
         _specifiers = nil;
         [self reloadSpecifiers];
     }
