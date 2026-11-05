@@ -202,7 +202,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
 }
 
 @implementation SWWidgetContainerView
--(id)createWidgetViewWithClass:(Class)cls cornerRadius:(int)cornerRadius {
+-(id)createWidgetViewWithClass:(Class)cls cornerRadius:(CGFloat)cornerRadius {
     if (!cls) return nil;
     UIView *view = [[cls alloc] init];
     if (!view) return nil;
@@ -230,7 +230,7 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
         default: return Nil;
     }
 }
--(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4 {
+-(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 rowHeight:(CGFloat)rowHeight widgetInset:(CGFloat)inset cornerRadius:(CGFloat)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4 {
 	if (w1 != 99) { _widgetView1 = [self createWidgetViewWithClass:[self classForType:w1] cornerRadius:cr]; if (_widgetView1) [self addSubview:_widgetView1]; else w1 = 99; }
 	if (w2 != 99) { _widgetView2 = [self createWidgetViewWithClass:[self classForType:w2] cornerRadius:cr]; if (_widgetView2) [self addSubview:_widgetView2]; else w2 = 99; }
     if (w3 != 99) { _widgetView3 = [self createWidgetViewWithClass:[self classForType:w3] cornerRadius:cr]; if (_widgetView3) [self addSubview:_widgetView3]; else w3 = 99; }
@@ -243,61 +243,32 @@ static void accumulateUsage(id ddu, unsigned long long *cellularOut, unsigned lo
     if (_widgetView3 && [_widgetView3 respondsToSelector:@selector(applyFontColorStyle:)]) [(id)_widgetView3 applyFontColorStyle:fc3];
     if (_widgetView4 && [_widgetView4 respondsToSelector:@selector(applyFontColorStyle:)]) [(id)_widgetView4 applyFontColorStyle:fc4];
 
+    // A second row only exists below a first one; with row one empty it moves up.
     BOOL hasR1 = (w1 != 99 || w2 != 99);
-    BOOL hasR2 = (w3 != 99 || w4 != 99);
-
-    if (hasR1) {
-        if (w1 != 99 && w2 != 99) {
-            [_widgetView1.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
-            [_widgetView1.trailingAnchor constraintEqualToAnchor:self.centerXAnchor constant:-7.5].active = YES;
-            [_widgetView2.leadingAnchor constraintEqualToAnchor:self.centerXAnchor constant:7.5].active = YES;
-            [_widgetView2.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
-            [_widgetView1.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-            [_widgetView2.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-            if (hasR2) {
-                [_widgetView1.bottomAnchor constraintEqualToAnchor:self.centerYAnchor constant:-5].active = YES;
-                [_widgetView2.bottomAnchor constraintEqualToAnchor:self.centerYAnchor constant:-5].active = YES;
-            } else {
-                [_widgetView1.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-                [_widgetView2.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-            }
-        } else {
-            UIView *v = (w1 != 99) ? _widgetView1 : _widgetView2;
-            [v.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
-            [v.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
-            [v.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-            if (hasR2) [v.bottomAnchor constraintEqualToAnchor:self.centerYAnchor constant:-5].active = YES;
-            else [v.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-            if ([v respondsToSelector:@selector(updateForBigWidgetView)]) [(id)v updateForBigWidgetView];
-        }
-    }
-
-    if (hasR2) {
-        if (w3 != 99 && w4 != 99) {
-            [_widgetView3.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
-            [_widgetView3.trailingAnchor constraintEqualToAnchor:self.centerXAnchor constant:-7.5].active = YES;
-            [_widgetView4.leadingAnchor constraintEqualToAnchor:self.centerXAnchor constant:7.5].active = YES;
-            [_widgetView4.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
-            if (hasR1) {
-                [_widgetView3.topAnchor constraintEqualToAnchor:self.centerYAnchor constant:5].active = YES;
-                [_widgetView4.topAnchor constraintEqualToAnchor:self.centerYAnchor constant:5].active = YES;
-            } else {
-                [_widgetView3.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-                [_widgetView4.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-            }
-            [_widgetView3.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-            [_widgetView4.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-        } else {
-            UIView *v = (w3 != 99) ? _widgetView3 : _widgetView4;
-            [v.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
-            [v.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
-            if (hasR1) [v.topAnchor constraintEqualToAnchor:self.centerYAnchor constant:5].active = YES;
-            else [v.topAnchor constraintEqualToAnchor:self.topAnchor constant:5].active = YES;
-            [v.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-15].active = YES;
-            if ([v respondsToSelector:@selector(updateForBigWidgetView)]) [(id)v updateForBigWidgetView];
-        }
-    }
+    [self placeRowWithLeft:_widgetView1 right:_widgetView2 top:0 rowHeight:rowHeight inset:inset];
+    [self placeRowWithLeft:_widgetView3 right:_widgetView4 top:(hasR1 ? rowHeight : 0) rowHeight:rowHeight inset:inset];
 	[self loadWidgetData];
+}
+// Each row is a band rowHeight tall with 5 above its widgets and 15 below, so a
+// widget is the same height whether it shares the page with a second row or not.
+-(void)placeRowWithLeft:(UIView *)left right:(UIView *)right top:(CGFloat)top rowHeight:(CGFloat)rowHeight inset:(CGFloat)inset {
+    if (!left && !right) return;
+    CGFloat height = MAX(rowHeight - 20, 0);
+    if (left && right) {
+        [left.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
+        [left.trailingAnchor constraintEqualToAnchor:self.centerXAnchor constant:-7.5].active = YES;
+        [right.leadingAnchor constraintEqualToAnchor:self.centerXAnchor constant:7.5].active = YES;
+        [right.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
+    } else {
+        UIView *v = left ?: right;
+        [v.leadingAnchor constraintEqualToAnchor:self.leadingAnchor constant:inset].active = YES;
+        [v.trailingAnchor constraintEqualToAnchor:self.trailingAnchor constant:-inset].active = YES;
+        if ([v respondsToSelector:@selector(updateForBigWidgetView)]) [(id)v updateForBigWidgetView];
+    }
+    for (UIView *v in (left && right) ? @[left, right] : @[left ?: right]) {
+        [v.topAnchor constraintEqualToAnchor:self.topAnchor constant:top + 5].active = YES;
+        [v.heightAnchor constraintEqualToConstant:height].active = YES;
+    }
 }
 -(BOOL)shouldLoadBatteryData { return _widgetType1 == 0 || _widgetType2 == 0 || _widgetType3 == 0 || _widgetType4 == 0; }
 -(BOOL)shouldLoadStorageData { return _widgetType1 == 1 || _widgetType2 == 1 || _widgetType3 == 1 || _widgetType4 == 1; }

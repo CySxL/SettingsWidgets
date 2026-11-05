@@ -23,7 +23,7 @@ int __isOSVersionAtLeast(int major, int minor, int patch) {
 @end
 
 @interface SWWidgetContainerView (CustomBackground)
--(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 widgetInset:(int)inset cornerRadius:(int)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4;
+-(void)setupWidgetsWithType1:(int)w1 type2:(int)w2 type3:(int)w3 type4:(int)w4 rowHeight:(CGFloat)rowHeight widgetInset:(CGFloat)inset cornerRadius:(CGFloat)cr fontColor1:(int)fc1 fontColor2:(int)fc2 fontColor3:(int)fc3 fontColor4:(int)fc4;
 -(void)applyCustomBackgrounds;
 @end
 
@@ -46,9 +46,14 @@ static int intForKey(NSString *key, int fallBack) {
 	return isNumberLike(result) ? [result intValue] : fallBack;
 }
 
+static CGFloat floatForKey(NSString *key, CGFloat fallBack) {
+	id result = getPref(key);
+	return isNumberLike(result) ? [result doubleValue] : fallBack;
+}
+
 static BOOL enabled;
 static BOOL widget2Enabled, widget3Enabled, widget4Enabled;
-static int widgetCornerRadius, widgetHeight, widgetInset;
+static CGFloat widgetCornerRadius, widgetHeight, widgetInset;
 static int widgetType1, widgetType2, widgetType3, widgetType4;
 static int fontColor1, fontColor2, fontColor3, fontColor4;
 
@@ -57,9 +62,10 @@ static void loadPrefs() {
 
   	enabled = boolForKey(@"enabled", YES);
 
-	widgetHeight = intForKey(@"widgetHeight", 120);
-	widgetInset = intForKey(@"widgetInset", 15);
-	widgetCornerRadius = intForKey(@"widgetCornerRadius", 16);
+	widgetHeight = floatForKey(@"widgetHeight", 120);
+	if (widgetHeight < MIN_WIDGET_HEIGHT) widgetHeight = MIN_WIDGET_HEIGHT;
+	widgetInset = floatForKey(@"widgetInset", 15);
+	widgetCornerRadius = floatForKey(@"widgetCornerRadius", 16);
 
     widgetType1 = intForKey(@"widgetType1", 0);
     widget2Enabled = boolForKey(@"widget2Enabled", YES);
@@ -90,8 +96,7 @@ static void loadPrefs() {
     int activeRows = 0;
     if (widgetType1 != 99 || (widget2Enabled && widgetType2 != 99)) activeRows++;
     if ((widget3Enabled && widgetType3 != 99) || (widget4Enabled && widgetType4 != 99)) activeRows++;
-    CGFloat singleHeight = widgetHeight < MIN_WIDGET_HEIGHT ? MIN_WIDGET_HEIGHT : widgetHeight;
-    CGFloat totalHeight = singleHeight * (activeRows > 0 ? activeRows : 1);
+    CGFloat totalHeight = widgetHeight * (activeRows > 0 ? activeRows : 1);
     
 	self.widgetContainerView.frame = CGRectMake(0, 0, tblView.frame.size.width, totalHeight);
 }
@@ -107,7 +112,7 @@ static void loadPrefs() {
     int w3 = widget3Enabled ? widgetType3 : 99;
     int w4 = widget4Enabled ? widgetType4 : 99;
 
-	[self.widgetContainerView setupWidgetsWithType1:widgetType1 type2:w2 type3:w3 type4:w4 widgetInset:widgetInset cornerRadius:widgetCornerRadius fontColor1:fontColor1 fontColor2:fontColor2 fontColor3:fontColor3 fontColor4:fontColor4];
+	[self.widgetContainerView setupWidgetsWithType1:widgetType1 type2:w2 type3:w3 type4:w4 rowHeight:widgetHeight widgetInset:widgetInset cornerRadius:widgetCornerRadius fontColor1:fontColor1 fontColor2:fontColor2 fontColor3:fontColor3 fontColor4:fontColor4];
 
     // Settles what each slot wants and paints; setWidgetBackgrounds alone would
     // not know about the custom backgrounds.
