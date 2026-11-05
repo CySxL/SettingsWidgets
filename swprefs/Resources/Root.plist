@@ -5,12 +5,12 @@
 	<key>items</key>
 	<array>
 		<dict><key>cell</key><string>PSSwitchCell</string><key>default</key><true/><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>enabled</string><key>label</key><string>Enabled</string></dict>
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Height</string></dict>
-		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>120</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetHeight</string><key>min</key><integer>100</integer><key>max</key><integer>280</integer><key>isSegmented</key><true/><key>showValue</key><true/><key>segmentCount</key><integer>10</integer></dict>
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Inset</string></dict>
-		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>15</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetInset</string><key>min</key><integer>5</integer><key>max</key><integer>25</integer><key>isSegmented</key><true/><key>showValue</key><true/><key>segmentCount</key><integer>11</integer></dict>
-		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Corner Radius</string></dict>
-		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>16</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetCornerRadius</string><key>min</key><integer>0</integer><key>max</key><integer>30</integer><key>isSegmented</key><true/><key>showValue</key><true/><key>segmentCount</key><integer>11</integer></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Height</string><key>footerText</key><string>Height of each widget row in points. Default is 120.</string></dict>
+		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>120</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetHeight</string><key>min</key><integer>100</integer><key>max</key><integer>280</integer><key>showValue</key><true/></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Inset</string><key>footerText</key><string>Distance from the screen edge in points. Default is 15.</string></dict>
+		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>15</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetInset</string><key>min</key><integer>5</integer><key>max</key><integer>25</integer><key>showValue</key><true/></dict>
+		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget Corner Radius</string><key>footerText</key><string>Corner radius in points. Default is 16.</string></dict>
+		<dict><key>cell</key><string>PSSliderCell</string><key>default</key><integer>16</integer><key>defaults</key><string>com.shepgoba.swprefs</string><key>key</key><string>widgetCornerRadius</string><key>min</key><integer>0</integer><key>max</key><integer>30</integer><key>showValue</key><true/></dict>
 		
 		<dict><key>cell</key><string>PSGroupCell</string><key>label</key><string>Widget 1</string><key>footerText</key><string>Adjust the options above to have a different color on this widget.</string></dict>
 		<dict>

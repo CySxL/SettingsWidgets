@@ -2,6 +2,8 @@
 #import "SWBackgroundCache.h"
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSTableCell.h>
+#import <Preferences/PSSliderTableCell.h>
+#import <objc/runtime.h>
 #import <PhotosUI/PhotosUI.h>
 #import <roothide.h>
 #import <spawn.h>
@@ -259,6 +261,109 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
 
 @end
 
+// A double tap on the row types an exact value. The stock value label stays, so
+// nothing is drawn here.
+@interface SWPSliderCell : PSSliderTableCell
+@end
+
+@implementation SWPSliderCell {
+    BOOL _prepared;
+}
+
+- (UISlider *)slider {
+    return [self.control isKindOfClass:[UISlider class]] ? (UISlider *)self.control : nil;
+}
+
+// The control does not exist yet when the cell is built, so the setup waits for
+// the first layout.
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    [self dropForceTouch];
+    if (_prepared || ![self slider])
+        return;
+    _prepared = YES;
+    UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(enterValue)];
+    doubleTap.numberOfTapsRequired = 2;
+    [self.contentView addGestureRecognizer:doubleTap];
+}
+
+// The slider stays continuous; a typed value keeps one decimal and drops a trailing .0.
+- (NSString *)format:(double)value {
+    double tenths = round(value * 10) / 10;
+    return tenths == round(tenths) ? [NSString stringWithFormat:@"%ld", lround(tenths)] : [NSString stringWithFormat:@"%.1f", tenths];
+}
+
+// Slider rows have no title, so the alert takes the group label above the row.
+- (NSString *)rowTitle {
+    PSListController *controller = self.specifier.target;
+    NSInteger index = [controller indexOfSpecifier:self.specifier];
+    if (index != NSNotFound && index > 0) {
+        NSString *name = [[controller specifierAtIndex:index - 1] name];
+        if ([name isKindOfClass:[NSString class]] && name.length)
+            return name;
+    }
+    return @"Value";
+}
+
+- (void)enterValue {
+    UISlider *slider = [self slider];
+    PSListController *controller = self.specifier.target;
+    if (!slider || ![controller isKindOfClass:[PSListController class]])
+        return;
+    double low = slider.minimumValue, high = slider.maximumValue;
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[self rowTitle]
+                                                                   message:[NSString stringWithFormat:@"%@ to %@.", [self format:low], [self format:high]]
+                                                            preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+        field.text = [self format:slider.value];
+        field.clearButtonMode = UITextFieldViewModeAlways;
+    }];
+    __weak SWPSliderCell *weakSelf = self;
+    __weak UIAlertController *weakAlert = alert;
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Set" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        SWPSliderCell *cell = weakSelf;
+        NSString *text = [weakAlert.textFields.firstObject.text stringByReplacingOccurrencesOfString:@"," withString:@"."];
+        NSScanner *scanner = [NSScanner scannerWithString:text ?: @""];
+        double typed = 0;
+        if (!cell || ![scanner scanDouble:&typed] || !scanner.isAtEnd)
+            return;
+        double value = MIN(MAX(round(typed * 10) / 10, low), high);
+        PSListController *target = cell.specifier.target;
+        if (![target isKindOfClass:[PSListController class]])
+            return;
+        [target setPreferenceValue:@(value) specifier:cell.specifier];
+        [target reloadSpecifier:cell.specifier animated:NO];
+    }]];
+    [controller presentViewController:alert animated:YES completion:nil];
+}
+
+// A force touch recogniser another tweak adds to sliders can strand in Changed
+// after a pull-down mid drag and block every gesture under the table; only our
+// own cells are touched.
+- (void)dropForceTouch {
+    static Class stuck = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        stuck = objc_getClass("CSPForceTouchGestureRecognizer");
+    });
+    UISlider *slider = [self slider];
+    if (!stuck || !slider)
+        return;
+    UIGestureRecognizer *found = nil;
+    for (UIGestureRecognizer *gesture in slider.gestureRecognizers) {
+        if ([gesture isKindOfClass:stuck]) {
+            found = gesture;
+            break;
+        }
+    }
+    if (found)
+        [slider removeGestureRecognizer:found];
+}
+
+@end
+
 @interface SWPRootListController () <PHPickerViewControllerDelegate>
 @property (nonatomic, assign) NSInteger currentPickingIndex;
 @end
@@ -282,6 +387,10 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
 - (NSArray *)specifiers {
     if (!_specifiers) {
         NSMutableArray *specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
+        // Before any row leaves the array, so a row put back later is built with it too.
+        for (PSSpecifier *specifier in specifiers)
+            if (specifier.cellType == PSSliderCell)
+                [specifier setProperty:[SWPSliderCell class] forKey:@"cellClass"];
 
         PSSpecifier *header = [PSSpecifier preferenceSpecifierNamed:@""
                                                              target:self
