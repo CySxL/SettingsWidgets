@@ -94,11 +94,19 @@ static CGFloat SWPNameBaselineOffset(CGFloat scale) {
     _nameBaseline = [_name.firstBaselineAnchor constraintEqualToAnchor:icon.centerYAnchor];
     [self applyTextScale:1.0];
 
+    // Icon and text centred as one block, never past the leading margin.
     UILayoutGuide *margins = self.contentView.layoutMarginsGuide;
+    UILayoutGuide *block = [[UILayoutGuide alloc] init];
+    [self.contentView addLayoutGuide:block];
+    NSLayoutConstraint *centred = [block.centerXAnchor constraintEqualToAnchor:self.contentView.centerXAnchor];
+    centred.priority = UILayoutPriorityDefaultHigh;
     [NSLayoutConstraint activateConstraints:@[
         [icon.widthAnchor constraintEqualToConstant:kSWPIconSide],
         [icon.heightAnchor constraintEqualToConstant:kSWPIconSide],
-        [icon.leadingAnchor constraintEqualToAnchor:margins.leadingAnchor],
+        [block.leadingAnchor constraintEqualToAnchor:icon.leadingAnchor],
+        [block.trailingAnchor constraintEqualToAnchor:_text.trailingAnchor],
+        [icon.leadingAnchor constraintGreaterThanOrEqualToAnchor:margins.leadingAnchor],
+        centred,
         [icon.centerYAnchor constraintEqualToAnchor:self.contentView.centerYAnchor],
         [_text.leadingAnchor constraintEqualToAnchor:icon.trailingAnchor constant:kSWPHeaderGap],
         _nameBaseline
