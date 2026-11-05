@@ -3,7 +3,12 @@ Name: SettingsWidgets
 Depends: mobilesubstrate, preferenceloader
 Version: 2.0.11
 Architecture: iphoneos-arm64e
-Description: Bring good looking widgets to the front page of settings!
+Description: Adds widgets to the top of the Settings page.
+ * show battery health, storage, Wi-Fi, cellular, hotspot & Bluetooth.
+ * respring or enter safe mode from the utility widget.
+ * arrange up to four widgets in two rows.
+ * set an image or GIF background per widget.
+ * show hotspot clients from HotspotPro.
 Maintainer: CySxL
 Author: shepgoba, CySxL
 Section: Tweaks
