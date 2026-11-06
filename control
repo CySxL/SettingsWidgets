@@ -1,6 +1,6 @@
 Package: com.cysxl.settingswidgets
 Name: SettingsWidgets
-Version: 2.0.13
+Version: 2.0.14
 Architecture: iphoneos-arm64e
 Depends: mobilesubstrate, preferenceloader
 Conflicts: com.shepgoba.settingswidgets
