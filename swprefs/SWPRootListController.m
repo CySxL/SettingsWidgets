@@ -241,7 +241,8 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
     if (!_branch)
         return;
     BOOL branch = [[self.specifier propertyForKey:@"swpBranch"] isEqual:@YES];
-    if (!branch) {
+    BOOL below = [[self.specifier propertyForKey:@"swpBranchBelow"] isEqual:@YES];
+    if (below) {
         for (UIView *view in self.subviews) {
             if ([NSStringFromClass([view class]) hasSuffix:@"SeparatorView"])
                 view.hidden = YES;
@@ -257,6 +258,11 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
         [path addLineToPoint:CGPointMake(x, y - r)];
         [path addQuadCurveToPoint:CGPointMake(x + r, y) controlPoint:CGPointMake(x, y)];
         [path addLineToPoint:CGPointMake(CGRectGetMaxX(slot), y)];
+        // A branch with another below it carries the line on to the next one.
+        if (below) {
+            [path moveToPoint:CGPointMake(x, y - r)];
+            [path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
+        }
     } else {
         [path moveToPoint:CGPointMake(x, CGRectGetMaxY(slot) + 3.0)];
         [path addLineToPoint:CGPointMake(x, CGRectGetMaxY(self.contentView.bounds))];
@@ -456,6 +462,7 @@ static BOOL SWPCustomOn(int n) {
         @[ @"Source Code", @"", NSStringFromSelector(@selector(openSourceCode)), @"" ],
         @[ @"JannikCrack", @"Icon", NSStringFromSelector(@selector(openIconTwitter)), @"" ],
         @[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(openGitHub)), @"avatar" ],
+        @[ @"Source Code", @"", NSStringFromSelector(@selector(openForkSource)), @"" ],
         @[ @"Tip on Ko-fi", @"", NSStringFromSelector(@selector(openKofi)), @"", @"cup.and.saucer" ]
     ];
     NSBundle *bundle = [NSBundle bundleForClass:[self class]];
@@ -644,6 +651,7 @@ static BOOL SWPCustomOn(int n) {
 - (void)openSourceCode { [self openURL:@"https://github.com/shepgoba/SettingsWidgets"]; }
 - (void)openIconTwitter { [self openURL:@"https://twitter.com/JannikCrack"]; }
 - (void)openGitHub { [self openURL:@"https://github.com/CySxL"]; }
+- (void)openForkSource { [self openURL:@"https://github.com/CySxL/SettingsWidgets"]; }
 - (void)openKofi { [self openURL:@"https://ko-fi.com/cysxl"]; }
 
 - (void)presentPickerForIndex:(NSInteger)index {
