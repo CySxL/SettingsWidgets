@@ -1,8 +1,11 @@
-Package: com.shepgoba.settingswidgets
+Package: com.cysxl.settingswidgets
 Name: SettingsWidgets
 Version: 2.0.13
 Architecture: iphoneos-arm64e
 Depends: mobilesubstrate, preferenceloader
+Conflicts: com.shepgoba.settingswidgets
+Replaces: com.shepgoba.settingswidgets
+Provides: com.shepgoba.settingswidgets
 Description: A fork of shepgoba's SettingsWidgets.
  Adds widgets to the top of the Settings page.
  * show battery health, storage, Wi-Fi, cellular, hotspot & Bluetooth.
