@@ -203,7 +203,9 @@ static UIImage *SWPSymbol(NSString *name, CGFloat side) {
         UIGraphicsEndImageContext();
         UIImageSymbolConfiguration *small = [UIImageSymbolConfiguration configurationWithPointSize:11.0 weight:UIImageSymbolWeightSemibold];
         NSTextAttachment *code = [[NSTextAttachment alloc] init];
-        code.image = [[UIImage systemImageNamed:@"chevron.left.forwardslash.chevron.right" withConfiguration:small] imageWithTintColor:[UIColor linkColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+        NSString *symbol = [specifier propertyForKey:@"swpBranchSymbol"];
+        if (![symbol isKindOfClass:[NSString class]]) symbol = @"chevron.left.forwardslash.chevron.right";
+        code.image = [[UIImage systemImageNamed:symbol withConfiguration:small] imageWithTintColor:[UIColor linkColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
         NSMutableAttributedString *title = [[NSMutableAttributedString alloc] init];
         if (code.image)
             [title appendAttributedString:[NSAttributedString attributedStringWithAttachment:code]];
@@ -448,12 +450,13 @@ static BOOL SWPCustomOn(int n) {
     PSSpecifier *credits = [PSSpecifier preferenceSpecifierNamed:@"Credits" target:self set:NULL get:NULL detail:nil cell:PSGroupCell edit:nil];
     [credits setProperty:@"© CySxL 2026" forKey:@"footerText"];
     [specifiers addObject:credits];
-    // name, subtitle, action, picture; a row with no subtitle is a branch of the row above it
+    // name, subtitle, action, picture, then an optional symbol; a row with no subtitle is a branch of the row above it
     NSArray *rows = @[
         @[ @"shepgoba", @"Original Developer", NSStringFromSelector(@selector(openTwitter)), @"" ],
         @[ @"Source Code", @"", NSStringFromSelector(@selector(openSourceCode)), @"" ],
         @[ @"JannikCrack", @"Icon", NSStringFromSelector(@selector(openIconTwitter)), @"" ],
-        @[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(openGitHub)), @"avatar" ]
+        @[ @"CySxL", @"Maintainer · iOS 16 Port", NSStringFromSelector(@selector(openGitHub)), @"avatar" ],
+        @[ @"Tip on Ko-fi", @"", NSStringFromSelector(@selector(openKofi)), @"", @"cup.and.saucer" ]
     ];
     NSBundle *bundle = [NSBundle bundleForClass:[self class]];
     PSSpecifier *previous = nil;
@@ -463,6 +466,7 @@ static BOOL SWPCustomOn(int n) {
         [credit setProperty:row[1] forKey:@"subtitle"];
         if ([row[1] length] == 0) {
             [credit setProperty:@YES forKey:@"swpBranch"];
+            if (row.count > 4) [credit setProperty:row[4] forKey:@"swpBranchSymbol"];
             [credit setProperty:@34 forKey:@"height"];
             [previous setProperty:@YES forKey:@"swpBranchBelow"];
         } else {
@@ -640,6 +644,7 @@ static BOOL SWPCustomOn(int n) {
 - (void)openSourceCode { [self openURL:@"https://github.com/shepgoba/SettingsWidgets"]; }
 - (void)openIconTwitter { [self openURL:@"https://twitter.com/JannikCrack"]; }
 - (void)openGitHub { [self openURL:@"https://github.com/CySxL"]; }
+- (void)openKofi { [self openURL:@"https://ko-fi.com/cysxl"]; }
 
 - (void)presentPickerForIndex:(NSInteger)index {
     self.currentPickingIndex = index;
